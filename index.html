@@ -2,16 +2,15 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, shrink-to-fit=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
   <title>Recorrido VR EE.UU.</title>
-  <!-- Librería A-Frame -->
-  <script src="https://aframe.io/releases/1.4.0/aframe.min.js"></script>
+  <!-- Version estable de A-Frame compatible con iOS Safari -->
+  <script src="https://aframe.io/releases/1.3.0/aframe.min.js"></script>
 </head>
-<body>
+<body style="margin: 0; overflow: hidden; background-color: #000;">
 
-  <!-- embedded y vr-mode-ui para asegurar el botón de gafas en móviles -->
-  <a-scene embedded vr-mode-ui="enabled: true">
-    <a-assets>
+  <a-scene vr-mode-ui="enabled: true">
+    <a-assets timeout="10000">
       <img id="lugar1" src="foto1.jpg">
       <img id="lugar2" src="foto2.jpg">
       <img id="lugar3" src="foto3.jpg">
@@ -20,7 +19,7 @@
     <!-- Fondo 360 -->
     <a-sky id="fondo-recorrido" src="#lugar1" rotation="0 -90 0"></a-sky>
 
-    <!-- Cámara con controles de giroscopio -->
+    <!-- Camara -->
     <a-entity camera look-controls position="0 1.6 0"></a-entity>
   </a-scene>
 
@@ -29,12 +28,12 @@
     let indiceActual = 0;
     let botonPresionado = false;
 
-    // Detectar mando de PS4
+    // Control con mando de PS4
     function revisarMando() {
       const gamepads = navigator.getGamepads();
-      if (gamepads[0]) {
+      if (gamepads && gamepads[0]) {
         const mando = gamepads[0];
-        const botonX = mando.buttons[0]; // Botón X del mando
+        const botonX = mando.buttons[0]; 
 
         if (botonX && botonX.pressed && !botonPresionado) {
           botonPresionado = true;
