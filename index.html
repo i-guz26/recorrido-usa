@@ -8,74 +8,95 @@
   <style>
     body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background-color: #000; }
     
-    /* Simulación de pantalla dividida estéreo para visores moviles en iOS */
-    .contenedor-dual {
+    #contenedor-vr {
       display: flex;
       width: 100vw;
       height: 100vh;
-    }
-    .ojo {
-      width: 50vw;
-      height: 100vh;
       position: relative;
-      overflow: hidden;
-      border-right: 1px solid #111;
-    }
-    iframe {
-      width: 100%;
-      height: 100%;
-      border: none;
     }
     
-    #boton-permiso {
+    /* Las dos vistas para cada lente de las BOBOVR */
+    .ojo-izquierdo, .ojo-derecho {
+      width: 50vw;
+      height: 100vh;
+      overflow: hidden;
+      position: relative;
+    }
+    
+    .ojo-izquierdo {
+      border-right: 2px solid #000;
+    }
+
+    /* Botón flotante para iniciar y partir la pantalla */
+    #boton-iniciar {
       position: fixed;
-      top: 20px;
+      top: 50%;
       left: 50%;
-      transform: translateX(-50%);
-      z-index: 9999;
-      background: #007aff;
+      transform: translate(-50%, -50%);
+      z-index: 99999;
+      background: #ff3b30;
       color: white;
-      padding: 12px 24px;
-      border-radius: 20px;
+      padding: 16px 30px;
+      border-radius: 30px;
       font-family: sans-serif;
+      font-size: 18px;
       font-weight: bold;
       border: none;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+      box-shadow: 0 4px 15px rgba(0,0,0,0.7);
+      cursor: pointer;
     }
   </style>
 </head>
 <body>
 
-  <button id="boton-permiso" onclick="activarGiroscopio()">Activar Giroscopio / Iniciar VR</button>
+  <button id="boton-iniciar" onclick="iniciarVR()">🥽 Entrar en VR (Pantalla Dividida)</button>
 
-  <a-scene embedded style="width: 100vw; height: 100vh;" vr-mode-ui="enabled: false">
-    <a-assets>
-      <img id="lugar1" src="foto1.jpg">
-      <img id="lugar2" src="foto2.jpg">
-      <img id="lugar3" src="foto3.jpg">
-    </a-assets>
+  <div id="contenedor-vr">
+    <!-- Vista Ojo Izquierdo -->
+    <div class="ojo-izquierdo">
+      <a-scene embedded vr-mode-ui="enabled: false" style="width: 100%; height: 100%;">
+        <a-assets>
+          <img id="lugar1" src="foto1.jpg">
+          <img id="lugar2" src="foto2.jpg">
+          <img id="lugar3" src="foto3.jpg">
+        </a-assets>
+        <a-sky class="fondo-escena" src="#lugar1" rotation="0 -90 0"></a-sky>
+        <a-entity camera look-controls="magicWindowTrackingEnabled: true" position="0 1.6 0"></a-entity>
+      </a-scene>
+    </div>
 
-    <a-sky id="fondo-recorrido" src="#lugar1" rotation="0 -90 0"></a-sky>
-    <a-entity camera look-controls="magicWindowTrackingEnabled: true" position="0 1.6 0"></a-entity>
-  </a-scene>
+    <!-- Vista Ojo Derecho -->
+    <div class="ojo-derecho">
+      <a-scene embedded vr-mode-ui="enabled: false" style="width: 100%; height: 100%;">
+        <a-sky class="fondo-escena" src="#lugar1" rotation="0 -90 0"></a-sky>
+        <a-entity camera look-controls="magicWindowTrackingEnabled: true" position="0 1.6 0"></a-entity>
+      </a-scene>
+    </div>
+  </div>
 
   <script>
-    function activarGiroscopio() {
-      // Solicitar permiso explícito de sensores en iOS Safari
+    function iniciarVR() {
+      // Pedir permisos de giroscopio en iOS 13+
       if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
         DeviceOrientationEvent.requestPermission()
           .then(response => {
             if (response === 'granted') {
-              document.getElementById('boton-permiso').style.display = 'none';
+              console.log("Permiso concedido");
             }
           })
           .catch(console.error);
-      } else {
-        document.getElementById('boton-permiso').style.display = 'none';
+      }
+
+      // Ocultar el botón de inicio
+      document.getElementById('boton-iniciar').style.display = 'none';
+
+      // Forzar pantalla horizontal si es posible
+      if (screen.orientation && screen.orientation.lock) {
+        screen.orientation.lock('landscape').catch(() => {});
       }
     }
 
-    // Control con mando de PS4
+    // Control sincrónico con el mando de PS4 para ambas vistas
     const estaciones = ["#lugar1", "#lugar2", "#lugar3"];
     let indiceActual = 0;
     let botonPresionado = false;
@@ -89,7 +110,13 @@
         if (botonX && botonX.pressed && !botonPresionado) {
           botonPresionado = true;
           indiceActual = (indiceActual + 1) % estaciones.length;
-          document.getElementById("fondo-recorrido").setAttribute("src", estaciones[indiceActual]);
+          
+          // Actualizar las dos escenas al mismo tiempo
+          const fondos = document.querySelectorAll('.fondo-escena');
+          fondos.forEach(fondo => {
+            fondo.setAttribute("src", estaciones[indiceActual]);
+          });
+
         } else if (botonX && !botonX.pressed) {
           botonPresionado = false;
         }
