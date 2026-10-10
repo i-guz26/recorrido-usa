@@ -4,31 +4,51 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
   <title>Recorrido VR EE.UU.</title>
-  <!-- Version estable de A-Frame compatible con iOS Safari -->
   <script src="https://aframe.io/releases/1.3.0/aframe.min.js"></script>
+  <style>
+    /* Estilo para pantalla dividida limpia */
+    body { margin: 0; overflow: hidden; background: #000; }
+  </style>
 </head>
-<body style="margin: 0; overflow: hidden; background-color: #000;">
+<body>
 
-  <a-scene vr-mode-ui="enabled: true">
+  <!-- webxr: false evita la pantalla negra en iOS -->
+  <a-scene webxr="enabled: false" vr-mode-ui="enabled: true">
     <a-assets timeout="10000">
       <img id="lugar1" src="foto1.jpg">
       <img id="lugar2" src="foto2.jpg">
       <img id="lugar3" src="foto3.jpg">
     </a-assets>
 
-    <!-- Fondo 360 -->
+    <!-- Escena 360 -->
     <a-sky id="fondo-recorrido" src="#lugar1" rotation="0 -90 0"></a-sky>
 
-    <!-- Camara -->
-    <a-entity camera look-controls position="0 1.6 0"></a-entity>
+    <!-- Cámara con giroscopio activado -->
+    <a-entity camera look-controls="magicWindowTrackingEnabled: true" position="0 1.6 0"></a-entity>
   </a-scene>
 
   <script>
+    // Solicitar permisos de giroscopio en iOS 13+ al tocar la pantalla
+    function solicitarPermisoiOS() {
+      if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
+        DeviceOrientationEvent.requestPermission()
+          .then(response => {
+            if (response === 'granted') {
+              window.addEventListener('deviceorientation', () => {});
+            }
+          })
+          .catch(console.error);
+      }
+    }
+
+    // Activar al hacer clic o tocar
+    window.addEventListener('click', solicitarPermisoiOS, { once: true });
+
+    // Escuchar el mando de PS4
     const estaciones = ["#lugar1", "#lugar2", "#lugar3"];
     let indiceActual = 0;
     let botonPresionado = false;
 
-    // Control con mando de PS4
     function revisarMando() {
       const gamepads = navigator.getGamepads();
       if (gamepads && gamepads[0]) {
