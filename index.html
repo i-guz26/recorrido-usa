@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Recorrido VR por Estados Unidos</title>
+  <!-- Librería A-Frame para Realidad Virtual Web -->
+  <script src="https://aframe.io/releases/1.4.0/aframe.min.js"></script>
+</head>
+<body>
+
+  <a-scene>
+    <!-- Carga de las imágenes en memoria -->
+    <a-assets>
+      <img id="lugar1" src="foto1.jpg">
+      <img id="lugar2" src="foto2.jpg">
+      <img id="lugar3" src="foto3.jpg">
+    </a-assets>
+
+    <!-- Fondo 360 grados -->
+    <a-sky id="fondo-recorrido" src="#lugar1" rotation="0 -90 0"></a-sky>
+
+    <!-- Cámara que responde al giroscopio del iPhone -->
+    <a-entity camera look-controls position="0 1.6 0"></a-entity>
+  </a-scene>
+
+  <!-- Control con Mando de PS4 -->
+  <script>
+    const estaciones = ["#lugar1", "#lugar2", "#lugar3"];
+    let indiceActual = 0;
+    let botonPresionado = false;
+
+    function revisarMando() {
+      const gamepads = navigator.getGamepads();
+      if (gamepads[0]) {
+        const mando = gamepads[0];
+        const botonX = mando.buttons[0]; // Botón X en mando PS4
+
+        if (botonX.pressed && !botonPresionado) {
+          botonPresionado = true;
+          // Avanzar a la siguiente foto
+          indiceActual = (indiceActual + 1) % estaciones.length;
+          document.getElementById("fondo-recorrido").setAttribute("src", estaciones[indiceActual]);
+        } else if (!botonX.pressed) {
+          botonPresionado = false;
+        }
+      }
+      requestAnimationFrame(revisarMando);
+    }
+
+    window.addEventListener("gamepadconnected", () => {
+      console.log("Mando detectado correctamente");
+      revisarMando();
+    });
+  </script>
+
+</body>
+</html>
