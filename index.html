@@ -15,7 +15,6 @@
       position: relative;
     }
     
-    /* Las dos vistas para cada lente de las BOBOVR */
     .ojo-izquierdo, .ojo-derecho {
       width: 50vw;
       height: 100vh;
@@ -26,30 +25,9 @@
     .ojo-izquierdo {
       border-right: 2px solid #000;
     }
-
-    /* Botón flotante para iniciar y partir la pantalla */
-    #boton-iniciar {
-      position: fixed;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      z-index: 99999;
-      background: #ff3b30;
-      color: white;
-      padding: 16px 30px;
-      border-radius: 30px;
-      font-family: sans-serif;
-      font-size: 18px;
-      font-weight: bold;
-      border: none;
-      box-shadow: 0 4px 15px rgba(0,0,0,0.7);
-      cursor: pointer;
-    }
   </style>
 </head>
 <body>
-
-  <button id="boton-iniciar" onclick="iniciarVR()">🥽 Entrar en VR (Pantalla Dividida)</button>
 
   <div id="contenedor-vr">
     <!-- Vista Ojo Izquierdo -->
@@ -75,27 +53,6 @@
   </div>
 
   <script>
-    function iniciarVR() {
-      // Pedir permisos de giroscopio en iOS 13+
-      if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
-        DeviceOrientationEvent.requestPermission()
-          .then(response => {
-            if (response === 'granted') {
-              console.log("Permiso concedido");
-            }
-          })
-          .catch(console.error);
-      }
-
-      // Ocultar el botón de inicio
-      document.getElementById('boton-iniciar').style.display = 'none';
-
-      // Forzar pantalla horizontal si es posible
-      if (screen.orientation && screen.orientation.lock) {
-        screen.orientation.lock('landscape').catch(() => {});
-      }
-    }
-
     // Control sincrónico con el mando de PS4 para ambas vistas
     const estaciones = ["#lugar1", "#lugar2", "#lugar3"];
     let indiceActual = 0;
