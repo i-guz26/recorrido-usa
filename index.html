@@ -8,120 +8,111 @@
   <style>
     body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background-color: #000; }
     
-    /* Contenedor de pantalla dividida estéreo */
-    #contenedor-vr {
+    /* Contenedor estéreo simétrico para las BOBOVR Z4 */
+    #vista-estereo {
       display: flex;
       width: 100vw;
       height: 100vh;
-      position: relative;
+      position: absolute;
+      top: 0;
+      left: 0;
+      pointer-events: none; /* Permite que los clics pasen a la escena */
     }
-    
-    .ojo {
+    .ojo-lente {
       width: 50vw;
       height: 100vh;
-      overflow: hidden;
-      position: relative;
-    }
-    
-    .ojo:first-child {
       border-right: 2px solid #000;
+      box-sizing: border-box;
     }
 
-    /* Botón flotante para iniciar reproducción */
-    #boton-play {
+    /* Botón flotante superior para arrancar el video sí o sí en iOS */
+    #btn-iniciar {
       position: fixed;
-      bottom: 20px;
+      top: 15px;
       left: 50%;
       transform: translateX(-50%);
-      z-index: 99999;
+      z-index: 999999;
       background: #ff3b30;
       color: white;
-      padding: 12px 24px;
-      border-radius: 25px;
+      padding: 14px 28px;
+      border-radius: 30px;
       font-family: sans-serif;
       font-size: 16px;
       font-weight: bold;
       border: 2px solid white;
-      box-shadow: 0 4px 15px rgba(0,0,0,0.7);
+      box-shadow: 0 4px 15px rgba(0,0,0,0.8);
       cursor: pointer;
     }
   </style>
 </head>
 <body>
 
-  <button id="boton-play" onclick="iniciarExperiencia()">▶ Toca aquí para iniciar el video</button>
+  <!-- Botón obligatorio para saltarse la seguridad de reproducción de iOS -->
+  <button id="btn-iniciar" onclick="comenzarVR()">▶ Tocar para Iniciar Video VR</button>
 
-  <!-- Video apuntando a video1.mp4 -->
-  <video id="video-360" src="video1.mp4" loop crossorigin="anonymous" playsinline webkit-playsinline style="display:none;"></video>
+  <a-scene embedded vr-mode-ui="enabled: false" style="width: 100vw; height: 100vh;">
+    <a-assets>
+      <video id="video-360" src="video1.mp4" loop crossorigin="anonymous" playsinline webkit-playsinline></video>
+    </a-assets>
 
-  <div id="contenedor-vr">
-    <!-- Ojo Izquierdo -->
-    <div class="ojo">
-      <a-scene embedded vr-mode-ui="enabled: false" style="width: 100%; height: 100%;">
-        <a-videosphere src="#video-360" rotation="0 -90 0"></a-videosphere>
-        <a-entity camera look-controls="magicWindowTrackingEnabled: true" position="0 1.6 0"></a-entity>
-      </a-scene>
-    </div>
+    <a-videosphere src="#video-360" rotation="0 -90 0"></a-videosphere>
+    <a-entity camera look-controls="magicWindowTrackingEnabled: true" position="0 1.6 0"></a-entity>
+  </a-scene>
 
-    <!-- Ojo Derecho -->
-    <div class="ojo">
-      <a-scene embedded vr-mode-ui="enabled: false" style="width: 100%; height: 100%;">
-        <a-videosphere src="#video-360" rotation="0 -90 0"></a-videosphere>
-        <a-entity camera look-controls="magicWindowTrackingEnabled: true" position="0 1.6 0"></a-entity>
-      </a-scene>
-    </div>
+  <!-- Máscara visual de pantalla dividida estéreo -->
+  <div id="vista-estereo">
+    <div class="ojo-lente"></div>
+    <div class="ojo-lente"></div>
   </div>
 
   <script>
     const video = document.getElementById('video-360');
-    const botonPlay = document.getElementById('boton-play');
-    let reproduciendo = false;
+    const boton = document.getElementById('btn-iniciar');
+    let enReproduccion = false;
 
-    function iniciarExperiencia() {
-      if (!reproduciendo) {
+    function comenzarVR() {
+      if (!enReproduccion) {
         video.play().then(() => {
-          reproduciendo = true;
-          botonPlay.textContent = "⏸ Pausar Video";
-        }).catch(err => {
-          console.log("Error al reproducir el video:", err);
-          alert("No se pudo reproducir. Asegúrate de que el archivo 'video1.mp4' esté subido en GitHub.");
+          enReproduccion = true;
+          boton.style.display = 'none'; // Ocultar botón al iniciar
+        }).catch(error => {
+          console.log("Error al reproducir:", error);
+          alert("El video no pudo iniciar. Comprueba que el archivo 'video1.mp4' esté bien subido en GitHub.");
         });
       } else {
         if (video.paused) {
           video.play();
-          botonPlay.textContent = "⏸ Pausar Video";
         } else {
           video.pause();
-          botonPlay.textContent = "▶ Reproducir Video";
         }
       }
 
-      // Conceder permisos de giroscopio en iOS
+      // Permisos obligatorios de giroscopio en iOS 13+
       if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
         DeviceOrientationEvent.requestPermission().catch(console.error);
       }
     }
 
-    // Control opcional con el botón X del mando de PS4
-    let botonPresionado = false;
-    function revisarMando() {
+    // Control con el botón X del mando de PS4
+    let botonXPresionado = false;
+    function revisarMandoPS4() {
       const gamepads = navigator.getGamepads();
       if (gamepads && gamepads[0]) {
         const mando = gamepads[0];
         const botonX = mando.buttons[0]; 
 
-        if (botonX && botonX.pressed && !botonPresionado) {
-          botonPresionado = true;
-          iniciarExperiencia();
+        if (botonX && botonX.pressed && !botonXPresionado) {
+          botonXPresionado = true;
+          comenzarVR();
         } else if (botonX && !botonX.pressed) {
-          botonPresionado = false;
+          botonXPresionado = false;
         }
       }
-      requestAnimationFrame(revisarMando);
+      requestAnimationFrame(revisarMandoPS4);
     }
 
     window.addEventListener("gamepadconnected", () => {
-      revisarMando();
+      revisarMandoPS4();
     });
   </script>
 </body>
