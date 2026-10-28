@@ -8,7 +8,7 @@
   <style>
     body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background-color: #000; font-family: sans-serif; }
     
-    /* Contenedor general que divide TODA la aplicación en 2 lentes para las BOBOVR Z4 */
+    /* Contenedor general partido en 2 lentes para las BOBOVR Z4 */
     .app-dual {
       display: flex;
       width: 100vw;
@@ -136,7 +136,7 @@
       padding: 0 10px;
     }
 
-    /* Pantalla 3: Escenas de Video VR (Ocultas hasta seleccionar) */
+    /* Pantalla 3: Contenedor del Visor VR Estéreo */
     .escena-vr {
       position: absolute;
       top: 0;
@@ -150,19 +150,17 @@
 </head>
 <body>
 
-  <!-- CONTENEDOR DUAL: TODO SE DIVIDE EN 2 LENTES EXACTOS -->
+  <!-- CONTENEDOR DUAL: DIVIDIDO EN 2 LENTES -->
   <div class="app-dual">
 
     <!---------------- LENTE IZQUIERDO ---------------->
     <div class="lente-mitad">
-      <!-- 1. Título Izquierdo -->
       <div class="pantalla-titulo" id="titulo-izq" onclick="irAlMenu()">
         <div class="banderas">🇺🇸 🗽 🇺🇸</div>
         <h1>RECORRIDO VR</h1>
         <p>Presiona <b>OPTIONS (Start)</b></p>
       </div>
 
-      <!-- 2. Menú Izquierdo -->
       <div class="menu-principal" id="menu-izq">
         <h2>DESTINOS VR</h2>
         <div class="grid-cuadros">
@@ -173,30 +171,17 @@
         </div>
         <div class="instruccion-menu">Usa el joystick y presiona <b>X</b></div>
       </div>
-
-      <!-- 3. Video VR Izquierdo -->
-      <div class="escena-vr" id="vr-izq">
-        <a-scene embedded vr-mode-ui="enabled: false" style="width: 100%; height: 100%;">
-          <a-assets>
-            <video id="video-reproductor-1" crossorigin="anonymous" playsinline webkit-playsinline></video>
-          </a-assets>
-          <a-videosphere src="#video-reproductor-1" rotation="0 -90 0"></a-videosphere>
-          <a-entity camera look-controls="magicWindowTrackingEnabled: true" position="0 1.6 0"></a-entity>
-        </a-scene>
-      </div>
     </div>
 
 
     <!---------------- LENTE DERECHO ---------------->
     <div class="lente-mitad">
-      <!-- 1. Título Derecho -->
       <div class="pantalla-titulo" id="titulo-der" onclick="irAlMenu()">
         <div class="banderas">🇺🇸 🗽 🇺🇸</div>
         <h1>RECORRIDO VR</h1>
         <p>Presiona <b>OPTIONS (Start)</b></p>
       </div>
 
-      <!-- 2. Menú Derecho -->
       <div class="menu-principal" id="menu-der">
         <h2>DESTINOS VR</h2>
         <div class="grid-cuadros">
@@ -207,32 +192,36 @@
         </div>
         <div class="instruccion-menu">Usa el joystick y presiona <b>X</b></div>
       </div>
-
-      <!-- 3. Video VR Derecho -->
-      <div class="escena-vr" id="vr-der">
-        <a-scene embedded vr-mode-ui="enabled: false" style="width: 100%; height: 100%;">
-          <a-assets>
-            <video id="video-reproductor-2" crossorigin="anonymous" playsinline webkit-playsinline></video>
-          </a-assets>
-          <a-videosphere src="#video-reproductor-2" rotation="0 -90 0"></a-videosphere>
-          <a-entity camera look-controls="magicWindowTrackingEnabled: true" position="0 1.6 0"></a-entity>
-        </a-scene>
-      </div>
     </div>
 
   </div>
 
+  <!-- ESCENA VR ÚNICA CENTRAL (Se duplica visualmente con CSS para evitar pantalla negra en iOS) -->
+  <div class="escena-vr" id="contenedor-vr-global">
+    <div style="display: flex; width: 100vw; height: 100vh;">
+      <div style="width: 50vw; height: 100vh; border-right: 2px solid #000;">
+        <a-scene embedded vr-mode-ui="enabled: false" style="width: 100%; height: 100%;">
+          <a-assets>
+            <video id="video-reproductor" src="video3.mp4" crossorigin="anonymous" playsinline webkit-playsinline></video>
+          </a-assets>
+          <a-videosphere src="#video-reproductor" rotation="0 -90 0"></a-videosphere>
+          <a-entity camera look-controls="magicWindowTrackingEnabled: true" position="0 1.6 0"></a-entity>
+        </a-scene>
+      </div>
+      <div style="width: 50vw; height: 100vh;">
+        <a-scene embedded vr-mode-ui="enabled: false" style="width: 100%; height: 100%;">
+          <a-videosphere src="#video-reproductor" rotation="0 -90 0"></a-videosphere>
+          <a-entity camera look-controls="magicWindowTrackingEnabled: true" position="0 1.6 0"></a-entity>
+        </a-scene>
+      </div>
+    </div>
+  </div>
+
   <script>
-    let estadoActual = "TITULO"; // "TITULO", "MENU", "VR"
+    let estadoActual = "TITULO"; 
     let seleccionActual = 0;
     const totalCuadros = 4;
-
-    const videosDestinos = [
-      "video3.mp4", 
-      "video4.mp4", 
-      "video5.mp4", 
-      "video6.mp4"  
-    ];
+    const videosDestinos = ["video3.mp4", "video4.mp4", "video5.mp4", "video6.mp4"];
 
     function actualizarMenuVisual() {
       for (let i = 0; i < totalCuadros; i++) {
@@ -274,26 +263,18 @@
       }
 
       estadoActual = "VR";
-      document.getElementById('menu-izq').style.display = 'none';
-      document.getElementById('menu-der').style.display = 'none';
-      
-      document.getElementById('vr-izq').style.display = 'block';
-      document.getElementById('vr-der').style.display = 'block';
+      // Ocultar menús duales
+      document.querySelector('.app-dual').style.display = 'none';
+      // Mostrar visor VR global partido en dos
+      document.getElementById('contenedor-vr-global').style.display = 'block';
 
-      const vid1 = document.getElementById('video-reproductor-1');
-      const vid2 = document.getElementById('video-reproductor-2');
-
-      vid1.src = videoFile;
-      vid2.src = videoFile;
-      
-      vid1.load();
-      vid2.load();
-
-      Promise.all([vid1.play(), vid2.play()]).then(() => {
-        console.log("Videos en paralelo reproduciéndose correctamente en ambos lentes.");
+      const vid = document.getElementById('video-reproductor');
+      vid.currentTime = 0;
+      vid.play().then(() => {
+        console.log("Video reproduciéndose con imagen y sonido en ambos lentes.");
       }).catch(err => {
-        console.log("Error al reproducir videos:", err);
-        alert("No se pudo reproducir 'video3.mp4'. Verifica que esté subido en GitHub.");
+        console.log("Error al reproducir el video:", err);
+        alert("No se pudo reproducir 'video3.mp4'. Verifica que esté subido correctamente en GitHub.");
         regresarAlMenu();
       });
 
@@ -302,21 +283,17 @@
       }
     }
 
-    const vidPrincipal = document.getElementById('video-reproductor-1');
-    vidPrincipal.addEventListener('ended', () => {
+    const videoElement = document.getElementById('video-reproductor');
+    videoElement.addEventListener('ended', () => {
       regresarAlMenu();
     });
 
     function regresarAlMenu() {
-      const vid1 = document.getElementById('video-reproductor-1');
-      const vid2 = document.getElementById('video-reproductor-2');
-      vid1.pause();
-      vid2.pause();
-      vid1.src = "";
-      vid2.src = "";
-
-      document.getElementById('vr-izq').style.display = 'none';
-      document.getElementById('vr-der').style.display = 'none';
+      videoElement.pause();
+      
+      // Ocultar visor VR y restaurar menús duales
+      document.getElementById('contenedor-vr-global').style.display = 'none';
+      document.querySelector('.app-dual').style.display = 'flex';
       
       document.getElementById('menu-izq').style.display = 'flex';
       document.getElementById('menu-der').style.display = 'flex';
