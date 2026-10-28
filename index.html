@@ -32,7 +32,7 @@
       justify-content: center;
     }
 
-    /* Pantalla 1: Título y Banderas (Duplicado en ambos lentes) */
+    /* Pantalla 1: Título y Banderas */
     .pantalla-titulo {
       position: absolute;
       top: 0;
@@ -78,7 +78,7 @@
       border: 1px solid rgba(255, 255, 255, 0.2);
     }
 
-    /* Pantalla 2: Menú de Selección de 4 Cuadros (Duplicado en ambos lentes) */
+    /* Pantalla 2: Menú de Selección de 4 Cuadros */
     .menu-principal {
       position: absolute;
       top: 0;
@@ -136,7 +136,7 @@
       padding: 0 10px;
     }
 
-    /* Pantalla 3: Contenedor del Visor VR Estéreo */
+    /* Pantalla 3: Visor VR Estéreo Dual */
     .escena-vr {
       position: absolute;
       top: 0;
@@ -150,9 +150,8 @@
 </head>
 <body>
 
-  <!-- CONTENEDOR DUAL: DIVIDIDO EN 2 LENTES -->
+  <!-- CONTENEDOR DUAL -->
   <div class="app-dual">
-
     <!---------------- LENTE IZQUIERDO ---------------->
     <div class="lente-mitad">
       <div class="pantalla-titulo" id="titulo-izq" onclick="irAlMenu()">
@@ -173,7 +172,6 @@
       </div>
     </div>
 
-
     <!---------------- LENTE DERECHO ---------------->
     <div class="lente-mitad">
       <div class="pantalla-titulo" id="titulo-der" onclick="irAlMenu()">
@@ -193,10 +191,9 @@
         <div class="instruccion-menu">Usa el joystick y presiona <b>X</b></div>
       </div>
     </div>
-
   </div>
 
-  <!-- ESCENA VR ÚNICA CENTRAL (Se duplica visualmente con CSS para evitar pantalla negra en iOS) -->
+  <!-- ESCENA VR GLOBAL PARTIDA EN 2 -->
   <div class="escena-vr" id="contenedor-vr-global">
     <div style="display: flex; width: 100vw; height: 100vh;">
       <div style="width: 50vw; height: 100vh; border-right: 2px solid #000;">
@@ -205,13 +202,13 @@
             <video id="video-reproductor" src="video3.mp4" crossorigin="anonymous" playsinline webkit-playsinline></video>
           </a-assets>
           <a-videosphere src="#video-reproductor" rotation="0 -90 0"></a-videosphere>
-          <a-entity camera look-controls="magicWindowTrackingEnabled: true" position="0 1.6 0"></a-entity>
+          <a-entity id="camara-izq" camera look-controls="magicWindowTrackingEnabled: true" position="0 1.6 0"></a-entity>
         </a-scene>
       </div>
       <div style="width: 50vw; height: 100vh;">
         <a-scene embedded vr-mode-ui="enabled: false" style="width: 100%; height: 100%;">
           <a-videosphere src="#video-reproductor" rotation="0 -90 0"></a-videosphere>
-          <a-entity camera look-controls="magicWindowTrackingEnabled: true" position="0 1.6 0"></a-entity>
+          <a-entity id="camara-der" camera look-controls="magicWindowTrackingEnabled: true" position="0 1.6 0"></a-entity>
         </a-scene>
       </div>
     </div>
@@ -263,23 +260,31 @@
       }
 
       estadoActual = "VR";
-      // Ocultar menús duales
       document.querySelector('.app-dual').style.display = 'none';
-      // Mostrar visor VR global partido en dos
       document.getElementById('contenedor-vr-global').style.display = 'block';
 
       const vid = document.getElementById('video-reproductor');
       vid.currentTime = 0;
+      
+      // Forzar activación del giroscopio y reproducción simultánea en iOS
       vid.play().then(() => {
-        console.log("Video reproduciéndose con imagen y sonido en ambos lentes.");
+        // Truco para forzar el redibujado de la escena y evitar el bloqueo visual inicial
+        setTimeout(() => {
+          window.dispatchEvent(new Event('resize'));
+        }, 100);
       }).catch(err => {
         console.log("Error al reproducir el video:", err);
-        alert("No se pudo reproducir 'video3.mp4'. Verifica que esté subido correctamente en GitHub.");
+        alert("No se pudo reproducir 'video3.mp4'. Verifica que esté subido en GitHub.");
         regresarAlMenu();
       });
 
+      // Solicitar permisos de giroscopio en iOS de forma forzada
       if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
-        DeviceOrientationEvent.requestPermission().catch(console.error);
+        DeviceOrientationEvent.requestPermission().then(response => {
+          if (response === 'granted') {
+            window.addEventListener('deviceorientation', (e) => {});
+          }
+        }).catch(console.error);
       }
     }
 
@@ -291,7 +296,6 @@
     function regresarAlMenu() {
       videoElement.pause();
       
-      // Ocultar visor VR y restaurar menús duales
       document.getElementById('contenedor-vr-global').style.display = 'none';
       document.querySelector('.app-dual').style.display = 'flex';
       
