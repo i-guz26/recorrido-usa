@@ -8,13 +8,37 @@
   <style>
     body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background-color: #000; font-family: sans-serif; }
     
-    /* Pantalla 1: Título y Banderas con transición animada */
-    #pantalla-titulo {
+    /* Contenedor general que divide TODA la aplicación en 2 lentes para las BOBOVR Z4 */
+    .app-dual {
+      display: flex;
+      width: 100vw;
+      height: 100vh;
       position: fixed;
       top: 0;
       left: 0;
-      width: 100vw;
+    }
+
+    .lente-mitad {
+      width: 50vw;
       height: 100vh;
+      overflow: hidden;
+      position: relative;
+      border-right: 2px solid #000;
+      box-sizing: border-box;
+      background: #111;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* Pantalla 1: Título y Banderas (Duplicado en ambos lentes) */
+    .pantalla-titulo {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
       background: radial-gradient(circle, #1a1a2e 0%, #000000 100%);
       display: flex;
       flex-direction: column;
@@ -26,41 +50,41 @@
       transition: opacity 0.6s ease, transform 0.6s ease;
     }
 
-    #pantalla-titulo.ocultar {
+    .pantalla-titulo.ocultar {
       opacity: 0;
       transform: scale(1.05);
       pointer-events: none;
     }
 
-    #pantalla-titulo h1 {
-      font-size: 3rem;
-      margin-bottom: 10px;
+    .pantalla-titulo h1 {
+      font-size: 1.8rem;
+      margin-bottom: 5px;
       letter-spacing: 2px;
       color: #ff3b30;
       text-shadow: 0 0 10px rgba(255, 59, 48, 0.5);
     }
 
     .banderas {
-      font-size: 2.5rem;
-      margin-bottom: 20px;
+      font-size: 2rem;
+      margin-bottom: 10px;
     }
 
-    #pantalla-titulo p {
-      font-size: 1.2rem;
+    .pantalla-titulo p {
+      font-size: 0.9rem;
       color: #ccc;
       background: rgba(255, 255, 255, 0.1);
-      padding: 12px 24px;
-      border-radius: 30px;
+      padding: 8px 16px;
+      border-radius: 20px;
       border: 1px solid rgba(255, 255, 255, 0.2);
     }
 
-    /* Pantalla 2: Menú de Selección (4 Cuadros) */
-    #menu-principal {
-      position: fixed;
+    /* Pantalla 2: Menú de Selección de 4 Cuadros (Duplicado en ambos lentes) */
+    .menu-principal {
+      position: absolute;
       top: 0;
       left: 0;
-      width: 100vw;
-      height: 100vh;
+      width: 100%;
+      height: 100%;
       background: #111;
       display: none;
       flex-direction: column;
@@ -70,26 +94,30 @@
       color: white;
     }
 
+    .menu-principal h2 {
+      font-size: 1.2rem;
+      margin-bottom: 10px;
+    }
+
     .grid-cuadros {
       display: grid;
       grid-template-columns: repeat(2, 1fr);
-      gap: 20px;
-      margin-top: 20px;
+      gap: 10px;
     }
 
     .cuadro {
-      width: 180px;
-      height: 120px;
+      width: 110px;
+      height: 75px;
       background: #222;
-      border: 3px solid #555;
-      border-radius: 12px;
+      border: 2px solid #555;
+      border-radius: 8px;
       display: flex;
       align-items: center;
       justify-content: center;
       text-align: center;
-      font-size: 14px;
+      font-size: 10px;
       font-weight: bold;
-      padding: 10px;
+      padding: 5px;
       transition: 0.2s;
     }
 
@@ -97,100 +125,110 @@
       border-color: #ff3b30;
       background: #331111;
       transform: scale(1.05);
-      box-shadow: 0 0 15px rgba(255, 59, 48, 0.6);
+      box-shadow: 0 0 10px rgba(255, 59, 48, 0.6);
     }
 
-    #instruccion-menu {
-      margin-top: 25px;
-      font-size: 15px;
+    .instruccion-menu {
+      margin-top: 15px;
+      font-size: 10px;
       color: #aaa;
+      text-align: center;
+      padding: 0 10px;
     }
 
-    /* Pantalla 3: Visor VR con Pantalla Dividida en 2 Lentes Obligatoria */
-    #contenedor-vr {
-      display: none;
-      width: 100vw;
-      height: 100vh;
-      position: fixed;
+    /* Pantalla 3: Escenas de Video VR (Ocultas hasta seleccionar) */
+    .escena-vr {
+      position: absolute;
       top: 0;
       left: 0;
-      background: #000;
+      width: 100%;
+      height: 100%;
+      display: none;
       z-index: 99997;
-    }
-
-    .visor-dual {
-      display: flex;
-      width: 100vw;
-      height: 100vh;
-      position: relative;
-    }
-
-    .lente {
-      width: 50vw;
-      height: 100vh;
-      overflow: hidden;
-      position: relative;
-      border-right: 2px solid #000;
     }
   </style>
 </head>
 <body>
 
-  <!-- 1. PANTALLA DE INICIO (TÍTULO Y BANDERAS) -->
-  <div id="pantalla-titulo" onclick="irAlMenu()">
-    <div class="banderas">🇺🇸 🗽 🇺🇸</div>
-    <h1>RECORRIDO VR</h1>
-    <p>Presiona el botón <b>OPTIONS (Start)</b> del mando</p>
-  </div>
+  <!-- CONTENEDOR DUAL: TODO SE DIVIDE EN 2 LENTES EXACTOS -->
+  <div class="app-dual">
 
-  <!-- 2. MENÚ PRINCIPAL DE 4 CUADROS -->
-  <div id="menu-principal">
-    <h2>SELECCIONA UN DESTINO</h2>
-    <div class="grid-cuadros">
-      <div class="cuadro activo" id="c0">1. Estatua de la Libertad</div>
-      <div class="cuadro" id="c1">2. Monumento a Washington</div>
-      <div class="cuadro" id="c2">3. Próximamente</div>
-      <div class="cuadro" id="c3">4. Próximamente</div>
-    </div>
-    <div id="instruccion-menu">Usa la cruceta/joystick para moverte y presiona <b>X</b> para entrar</div>
-  </div>
+    <!---------------- LENTE IZQUIERDO ---------------->
+    <div class="lente-mitad">
+      <!-- 1. Título Izquierdo -->
+      <div class="pantalla-titulo" id="titulo-izq" onclick="irAlMenu()">
+        <div class="banderas">🇺🇸 🗽 🇺🇸</div>
+        <h1>RECORRIDO VR</h1>
+        <p>Presiona <b>OPTIONS (Start)</b></p>
+      </div>
 
-  <!-- 3. REPRODUCTOR VR DIVIDIDO EN 2 LENTES -->
-  <div id="contenedor-vr">
-    <div class="visor-dual">
-      <!-- Lente Izquierdo -->
-      <div class="lente">
+      <!-- 2. Menú Izquierdo -->
+      <div class="menu-principal" id="menu-izq">
+        <h2>DESTINOS VR</h2>
+        <div class="grid-cuadros">
+          <div class="cuadro activo" id="c0-izq">1. Estatua de la Libertad</div>
+          <div class="cuadro" id="c1-izq">2. Washington</div>
+          <div class="cuadro" id="c2-izq">3. Próximamente</div>
+          <div class="cuadro" id="c3-izq">4. Próximamente</div>
+        </div>
+        <div class="instruccion-menu">Usa el joystick y presiona <b>X</b></div>
+      </div>
+
+      <!-- 3. Video VR Izquierdo -->
+      <div class="escena-vr" id="vr-izq">
         <a-scene embedded vr-mode-ui="enabled: false" style="width: 100%; height: 100%;">
           <a-assets>
-            <video id="video-reproductor" crossorigin="anonymous" playsinline webkit-playsinline></video>
+            <video id="video-reproductor-1" crossorigin="anonymous" playsinline webkit-playsinline></video>
           </a-assets>
-          <a-videosphere src="#video-reproductor" rotation="0 -90 0"></a-videosphere>
-          <a-entity camera look-controls="magicWindowTrackingEnabled: true" position="0 1.6 0"></a-entity>
-        </a-scene>
-      </div>
-
-      <!-- Lente Derecho (Duplicado visual exacto) -->
-      <div class="lente">
-        <a-scene embedded vr-mode-ui="enabled: false" style="width: 100%; height: 100%;">
-          <a-videosphere src="#video-reproductor" rotation="0 -90 0"></a-videosphere>
+          <a-videosphere src="#video-reproductor-1" rotation="0 -90 0"></a-videosphere>
           <a-entity camera look-controls="magicWindowTrackingEnabled: true" position="0 1.6 0"></a-entity>
         </a-scene>
       </div>
     </div>
+
+
+    <!---------------- LENTE DERECHO ---------------->
+    <div class="lente-mitad">
+      <!-- 1. Título Derecho -->
+      <div class="pantalla-titulo" id="titulo-der" onclick="irAlMenu()">
+        <div class="banderas">🇺🇸 🗽 🇺🇸</div>
+        <h1>RECORRIDO VR</h1>
+        <p>Presiona <b>OPTIONS (Start)</b></p>
+      </div>
+
+      <!-- 2. Menú Derecho -->
+      <div class="menu-principal" id="menu-der">
+        <h2>DESTINOS VR</h2>
+        <div class="grid-cuadros">
+          <div class="cuadro activo" id="c0-der">1. Estatua de la Libertad</div>
+          <div class="cuadro" id="c1-der">2. Washington</div>
+          <div class="cuadro" id="c2-der">3. Próximamente</div>
+          <div class="cuadro" id="c3-der">4. Próximamente</div>
+        </div>
+        <div class="instruccion-menu">Usa el joystick y presiona <b>X</b></div>
+      </div>
+
+      <!-- 3. Video VR Derecho -->
+      <div class="escena-vr" id="vr-der">
+        <a-scene embedded vr-mode-ui="enabled: false" style="width: 100%; height: 100%;">
+          <a-assets>
+            <video id="video-reproductor-2" crossorigin="anonymous" playsinline webkit-playsinline></video>
+          </a-assets>
+          <a-videosphere src="#video-reproductor-2" rotation="0 -90 0"></a-videosphere>
+          <a-entity camera look-controls="magicWindowTrackingEnabled: true" position="0 1.6 0"></a-entity>
+        </a-scene>
+      </div>
+    </div>
+
   </div>
 
   <script>
-    const pantallaTitulo = document.getElementById('pantalla-titulo');
-    const menuPrincipal = document.getElementById('menu-principal');
-    const contenedorVr = document.getElementById('contenedor-vr');
-    const video = document.getElementById('video-reproductor');
-
     let estadoActual = "TITULO"; // "TITULO", "MENU", "VR"
     let seleccionActual = 0;
     const totalCuadros = 4;
 
     const videosDestinos = [
-      "video3.mp4", // Cuadro 1 (Estatua de la Libertad)
+      "video3.mp4", 
       "video4.mp4", 
       "video5.mp4", 
       "video6.mp4"  
@@ -198,22 +236,31 @@
 
     function actualizarMenuVisual() {
       for (let i = 0; i < totalCuadros; i++) {
-        const el = document.getElementById('c' + i);
+        const elIzq = document.getElementById('c' + i + '-izq');
+        const elDer = document.getElementById('c' + i + '-der');
         if (i === seleccionActual) {
-          el.classList.add('activo');
+          elIzq.classList.add('activo');
+          elDer.classList.add('activo');
         } else {
-          el.classList.remove('activo');
+          elIzq.classList.remove('activo');
+          elDer.classList.remove('activo');
         }
       }
     }
 
     function irAlMenu() {
       if (estadoActual !== "TITULO") return;
-      pantallaTitulo.classList.add('ocultar');
+      
+      const tIzq = document.getElementById('titulo-izq');
+      const tDer = document.getElementById('titulo-der');
+      tIzq.classList.add('ocultar');
+      tDer.classList.add('ocultar');
       
       setTimeout(() => {
-        pantallaTitulo.style.display = 'none';
-        menuPrincipal.style.display = 'flex';
+        tIzq.style.display = 'none';
+        tDer.style.display = 'none';
+        document.getElementById('menu-izq').style.display = 'flex';
+        document.getElementById('menu-der').style.display = 'flex';
         estadoActual = "MENU";
       }, 600);
     }
@@ -227,16 +274,26 @@
       }
 
       estadoActual = "VR";
-      menuPrincipal.style.display = 'none';
-      contenedorVr.style.display = 'block'; // Fuerza la pantalla dividida en 2 lentes
+      document.getElementById('menu-izq').style.display = 'none';
+      document.getElementById('menu-der').style.display = 'none';
+      
+      document.getElementById('vr-izq').style.display = 'block';
+      document.getElementById('vr-der').style.display = 'block';
 
-      video.src = videoFile;
-      video.load();
-      video.play().then(() => {
-        console.log("Video reproduciéndose correctamente con imagen y sonido.");
+      const vid1 = document.getElementById('video-reproductor-1');
+      const vid2 = document.getElementById('video-reproductor-2');
+
+      vid1.src = videoFile;
+      vid2.src = videoFile;
+      
+      vid1.load();
+      vid2.load();
+
+      Promise.all([vid1.play(), vid2.play()]).then(() => {
+        console.log("Videos en paralelo reproduciéndose correctamente en ambos lentes.");
       }).catch(err => {
-        console.log("Error al reproducir el video:", err);
-        alert("No se pudo reproducir 'video3.mp4'. Verifica que esté subido correctamente en GitHub.");
+        console.log("Error al reproducir videos:", err);
+        alert("No se pudo reproducir 'video3.mp4'. Verifica que esté subido en GitHub.");
         regresarAlMenu();
       });
 
@@ -245,15 +302,24 @@
       }
     }
 
-    video.addEventListener('ended', () => {
+    const vidPrincipal = document.getElementById('video-reproductor-1');
+    vidPrincipal.addEventListener('ended', () => {
       regresarAlMenu();
     });
 
     function regresarAlMenu() {
-      video.pause();
-      video.src = "";
-      contenedorVr.style.display = 'none';
-      menuPrincipal.style.display = 'flex';
+      const vid1 = document.getElementById('video-reproductor-1');
+      const vid2 = document.getElementById('video-reproductor-2');
+      vid1.pause();
+      vid2.pause();
+      vid1.src = "";
+      vid2.src = "";
+
+      document.getElementById('vr-izq').style.display = 'none';
+      document.getElementById('vr-der').style.display = 'none';
+      
+      document.getElementById('menu-izq').style.display = 'flex';
+      document.getElementById('menu-der').style.display = 'flex';
       estadoActual = "MENU";
     }
 
