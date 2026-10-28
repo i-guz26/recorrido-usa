@@ -8,26 +8,46 @@
   <style>
     body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background-color: #000; font-family: sans-serif; }
     
-    /* Contenedor de pantalla dividida estéreo (Oculto en el menú principal) */
-    #contenedor-vr {
-      display: none;
+    /* Pantalla 1: Título y Banderas */
+    #pantalla-titulo {
+      position: fixed;
+      top: 0;
+      left: 0;
       width: 100vw;
       height: 100vh;
-      position: relative;
-    }
-    
-    .ojo {
-      width: 50vw;
-      height: 100vh;
-      overflow: hidden;
-      position: relative;
-    }
-    
-    .ojo:first-child {
-      border-right: 2px solid #000;
+      background: radial-gradient(circle, #1a1a2e 0%, #000000 100%);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 99999;
+      color: white;
+      text-align: center;
     }
 
-    /* Interfaz del Menú de 4 Cuadros (Pantalla Completa antes de entrar en VR) */
+    #pantalla-titulo h1 {
+      font-size: 3rem;
+      margin-bottom: 10px;
+      letter-spacing: 2px;
+      color: #ff3b30;
+      text-shadow: 0 0 10px rgba(255, 59, 48, 0.5);
+    }
+
+    .banderas {
+      font-size: 2.5rem;
+      margin-bottom: 20px;
+    }
+
+    #pantalla-titulo p {
+      font-size: 1.2rem;
+      color: #ccc;
+      background: rgba(255, 255, 255, 0.1);
+      padding: 12px 24px;
+      border-radius: 30px;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+
+    /* Pantalla 2: Menú de Selección (4 Cuadros) */
     #menu-principal {
       position: fixed;
       top: 0;
@@ -35,11 +55,11 @@
       width: 100vw;
       height: 100vh;
       background: #111;
-      display: flex;
+      display: none;
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      z-index: 99999;
+      z-index: 99998;
       color: white;
     }
 
@@ -63,49 +83,70 @@
       font-size: 14px;
       font-weight: bold;
       padding: 10px;
-      cursor: pointer;
       transition: 0.2s;
     }
 
     .cuadro.activo {
       border-color: #ff3b30;
       background: #331111;
+      transform: scale(1.05);
+      box-shadow: 0 0 15px rgba(255, 59, 48, 0.6);
     }
 
-    #instruccion-inicio {
+    #instruccion-menu {
       margin-top: 25px;
-      font-size: 16px;
+      font-size: 15px;
       color: #aaa;
+    }
+
+    /* Pantalla 3: Reproductor VR en Pantalla Dividida */
+    #contenedor-vr {
+      display: none;
+      width: 100vw;
+      height: 100vh;
+      position: relative;
+    }
+    
+    .ojo {
+      width: 50vw;
+      height: 100vh;
+      overflow: hidden;
+      position: relative;
+    }
+    
+    .ojo:first-child {
+      border-right: 2px solid #000;
     }
   </style>
 </head>
 <body>
 
-  <!-- MENÚ PRINCIPAL DE SELECCIÓN (4 CUADROS) -->
+  <!-- 1. PANTALLA DE INICIO (TÍTULO Y BANDERAS) -->
+  <div id="pantalla-titulo" onclick="irAlMenu()">
+    <div class="banderas">🇺🇸 🗽 🇺🇸</div>
+    <h1>RECORRIDO VR</h1>
+    <p>Presiona el botón <b>OPTIONS (Start)</b> del mando</p>
+  </div>
+
+  <!-- 2. MENÚ PRINCIPAL DE 4 CUADROS -->
   <div id="menu-principal">
-    <h2>SELECCIONA UN DESTINO VR</h2>
+    <h2>SELECCIONA UN DESTINO</h2>
     <div class="grid-cuadros">
       <div class="cuadro activo" id="c0">1. Estatua de la Libertad</div>
       <div class="cuadro" id="c1">2. Monumento a Washington</div>
       <div class="cuadro" id="c2">3. Próximamente</div>
       <div class="cuadro" id="c3">4. Próximamente</div>
     </div>
-    <div id="instruccion-inicio">Presiona el botón <b>OPTIONS (Start)</b> o la <b>X</b> para iniciar</div>
+    <div id="instruccion-menu">Usa la cruceta/joystick para moverte y presiona <b>X</b> para entrar</div>
   </div>
 
-  <!-- REPRODUCTOR DE VIDEO VR (Oculto hasta seleccionar destino) -->
+  <!-- 3. REPRODUCTOR DE VIDEO VR -->
   <div id="contenedor-vr">
     <!-- Ojo Izquierdo -->
     <div class="ojo">
       <a-scene embedded vr-mode-ui="enabled: false" style="width: 100%; height: 100%;">
         <a-videosphere id="v-sphere-left" rotation="0 -90 0"></a-videosphere>
-        <a-entity camera look-controls="magicWindowTrackingEnabled: true" position="0 1.6 0">
-          <a-entity cursor="fuse: false; rayOrigin: mouse;"
-                    position="0 0 -1"
-                    geometry="primitive: ring; radiusInner: 0.01; radiusOuter: 0.015"
-                    material="color: white; shader: flat">
-          </a-entity>
-        </a-entity>
+        <a-entity camera look-controls="magicWindowTrackingEnabled: true" position="0 1.6 0"></a-entity>
       </a-scene>
     </div>
 
@@ -122,22 +163,22 @@
   <video id="video-reproductor" crossorigin="anonymous" playsinline webkit-playsinline style="display:none;"></video>
 
   <script>
+    const pantallaTitulo = document.getElementById('pantalla-titulo');
     const menuPrincipal = document.getElementById('menu-principal');
     const contenedorVr = document.getElementById('contenedor-vr');
     const video = document.getElementById('video-reproductor');
     const vSphereLeft = document.getElementById('v-sphere-left');
     const vSphereRight = document.getElementById('v-sphere-right');
 
+    let estadoActual = "TITULO"; // "TITULO", "MENU", "VR"
     let seleccionActual = 0;
     const totalCuadros = 4;
-    let enSimulacion = false;
 
-    // Relación de cuadros con los videos solicitados
     const videosDestinos = [
-      "video3.mp4", // Cuadro 1: Estatua de la Libertad (Funciona)
-      "video4.mp4", // Cuadro 2 (Próximamente)
-      "video5.mp4", // Cuadro 3 (Próximamente)
-      "video6.mp4"  // Cuadro 4 (Próximamente)
+      "video3.mp4", // Cuadro 1 (Estatua de la Libertad)
+      "video4.mp4", // Cuadro 2
+      "video5.mp4", // Cuadro 3
+      "video6.mp4"  // Cuadro 4
     ];
 
     function actualizarMenuVisual() {
@@ -151,16 +192,22 @@
       }
     }
 
+    function irAlMenu() {
+      pantallaTitulo.style.display = 'none';
+      menuPrincipal.style.display = 'flex';
+      estadoActual = "MENU";
+    }
+
     function seleccionarDestino(index) {
       const videoFile = videosDestinos[index];
       
-      // Validar si el video existe (especialmente para los cuadros 2, 3 y 4 que aún no tienen archivo)
+      // Validar si el video está disponible (solo el cuadro 0 / video3.mp4 por ahora)
       if (index > 0) {
         alert("Este destino (" + videoFile + ") estará disponible próximamente.");
         return;
       }
 
-      enSimulacion = true;
+      estadoActual = "VR";
       menuPrincipal.style.display = 'none';
       contenedorVr.style.display = 'flex';
 
@@ -186,63 +233,85 @@
     function regresarAlMenu() {
       video.pause();
       video.src = "";
-      enSimulacion = false;
       contenedorVr.style.display = 'none';
       menuPrincipal.style.display = 'flex';
+      estadoActual = "MENU";
     }
 
-    document.getElementById('menu-principal').addEventListener('click', () => {
-      if (!enSimulacion) {
-        seleccionarDestino(seleccionActual);
-      }
-    });
-
-    let botonXPronto = false;
-    let botonOptionsPronto = false;
+    // Control por mando de PS4
+    let btnXPronto = false;
+    let btnOptionsPronto = false;
     let dpadAbajoPronto = false;
     let dpadArribaPronto = false;
+    let dpadIzquierdaPronto = false;
+    let dpadDerechaPronto = false;
 
     function bucleMandoPS4() {
       const gamepads = navigator.getGamepads();
       if (gamepads && gamepads[0]) {
         const m = gamepads[0];
         
+        // Botón OPTIONS (Start) - Índice 9 o 3
         const btnOptions = m.buttons[9] || m.buttons[3];
-        if (btnOptions && btnOptions.pressed && !botonOptionsPronto) {
-          botonOptionsPronto = true;
-          if (!enSimulacion) {
-            seleccionarDestino(seleccionActual);
+        if (btnOptions && btnOptions.pressed && !btnOptionsPronto) {
+          btnOptionsPronto = true;
+          if (estadoActual === "TITULO") {
+            irAlMenu();
           }
         } else if (btnOptions && !btnOptions.pressed) {
-          botonOptionsPronto = false;
+          btnOptionsPronto = false;
         }
 
+        // Botón X (Cruz) - Índice 0
         const botonX = m.buttons[0];
-        if (botonX && botonX.pressed && !botonXPronto) {
-          botonXPronto = true;
-          if (!enSimulacion) {
+        if (botonX && botonX.pressed && !btnXPronto) {
+          btnXPronto = true;
+          if (estadoActual === "MENU") {
             seleccionarDestino(seleccionActual);
           }
         } else if (botonX && !botonX.pressed) {
-          botonXPronto = false;
+          btnXPronto = false;
         }
 
-        if (!enSimulacion) {
+        // Navegación en el menú con cruceta o joystick
+        if (estadoActual === "MENU") {
           const axisY = m.axes[1];
+          const axisX = m.axes[0];
+
+          // Abajo (D-pad 13 o eje Y positivo)
           if ((m.buttons[13] && m.buttons[13].pressed || axisY > 0.5) && !dpadAbajoPronto) {
             dpadAbajoPronto = true;
-            seleccionActual = (seleccionActual + 1) % totalCuadros;
+            if (seleccionActual < 2) seleccionActual += 2; // Salto de fila en la grilla de 2x2
             actualizarMenuVisual();
-          } else if (!m.buttons[13] && axisY <= 0.5) {
+          } else if (!(m.buttons[13] && m.buttons[13].pressed) && axisY <= 0.5) {
             dpadAbajoPronto = false;
           }
 
+          // Arriba (D-pad 12 o eje Y negativo)
           if ((m.buttons[12] && m.buttons[12].pressed || axisY < -0.5) && !dpadArribaPronto) {
             dpadArribaPronto = true;
-            seleccionActual = (seleccionActual - 1 + totalCuadros) % totalCuadros;
+            if (seleccionActual >= 2) seleccionActual -= 2;
             actualizarMenuVisual();
-          } else if (!m.buttons[12] && axisY >= -0.5) {
+          } else if (!(m.buttons[12] && m.buttons[12].pressed) && axisY >= -0.5) {
             dpadArribaPronto = false;
+          }
+
+          // Derecha (D-pad 15 o eje X positivo)
+          if ((m.buttons[15] && m.buttons[15].pressed || axisX > 0.5) && !dpadDerechaPronto) {
+            dpadDerechaPronto = true;
+            if (seleccionActual % 2 === 0) seleccionActual += 1; // Moverse a la columna derecha
+            actualizarMenuVisual();
+          } else if (!(m.buttons[15] && m.buttons[15].pressed) && axisX <= 0.5) {
+            dpadDerechaPronto = false;
+          }
+
+          // Izquierda (D-pad 14 o eje X negativo)
+          if ((m.buttons[14] && m.buttons[14].pressed || axisX < -0.5) && !dpadIzquierdaPronto) {
+            dpadIzquierdaPronto = true;
+            if (seleccionActual % 2 === 1) seleccionActual -= 1; // Moverse a la columna izquierda
+            actualizarMenuVisual();
+          } else if (!(m.buttons[14] && m.buttons[14].pressed) && axisX >= -0.5) {
+            dpadIzquierdaPronto = false;
           }
         }
       }
