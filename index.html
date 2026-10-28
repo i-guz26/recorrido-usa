@@ -6,10 +6,11 @@
   <title>Recorrido VR - EE.UU.</title>
   <script src="https://aframe.io/releases/1.3.0/aframe.min.js"></script>
   <style>
-    body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background-color: #000; }
+    body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background-color: #000; font-family: sans-serif; }
     
+    /* Contenedor de pantalla dividida estéreo (Oculto en el menú principal) */
     #contenedor-vr {
-      display: flex;
+      display: none;
       width: 100vw;
       height: 100vh;
       position: relative;
@@ -26,131 +27,241 @@
       border-right: 2px solid #000;
     }
 
-    #boton-play {
+    /* Interfaz del Menú de 4 Cuadros (Pantalla Completa antes de entrar en VR) */
+    #menu-principal {
       position: fixed;
-      bottom: 20px;
-      left: 50%;
-      transform: translateX(-50%);
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: #111;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
       z-index: 99999;
-      background: #ff3b30;
       color: white;
-      padding: 12px 24px;
-      border-radius: 25px;
-      font-family: sans-serif;
-      font-size: 16px;
-      font-weight: bold;
-      border: 2px solid white;
-      box-shadow: 0 4px 15px rgba(0,0,0,0.7);
-      cursor: pointer;
     }
 
-    /* Indicador visual de qué video está reproduciéndose */
-    #info-video {
-      position: fixed;
-      top: 15px;
-      left: 50%;
-      transform: translateX(-50%);
-      z-index: 99999;
-      color: white;
-      font-family: sans-serif;
+    .grid-cuadros {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 20px;
+      margin-top: 20px;
+    }
+
+    .cuadro {
+      width: 180px;
+      height: 120px;
+      background: #222;
+      border: 3px solid #555;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
       font-size: 14px;
-      background: rgba(0,0,0,0.6);
-      padding: 6px 14px;
-      border-radius: 15px;
-      pointer-events: none;
+      font-weight: bold;
+      padding: 10px;
+      cursor: pointer;
+      transition: 0.2s;
+    }
+
+    .cuadro.activo {
+      border-color: #ff3b30;
+      background: #331111;
+    }
+
+    #instruccion-inicio {
+      margin-top: 25px;
+      font-size: 16px;
+      color: #aaa;
     }
   </style>
 </head>
 <body>
 
-  <div id="info-video">Reproduciendo: Video 1</div>
-  <button id="boton-play" onclick="iniciarExperiencia()">▶ Toca aquí para iniciar</button>
+  <!-- MENÚ PRINCIPAL DE SELECCIÓN (4 CUADROS) -->
+  <div id="menu-principal">
+    <h2>SELECCIONA UN DESTINO VR</h2>
+    <div class="grid-cuadros">
+      <div class="cuadro activo" id="c0">1. Estatua de la Libertad</div>
+      <div class="cuadro" id="c1">2. Monumento a Washington</div>
+      <div class="cuadro" id="c2">3. Próximamente</div>
+      <div class="cuadro" id="c3">4. Próximamente</div>
+    </div>
+    <div id="instruccion-inicio">Presiona el botón <b>OPTIONS (Start)</b> o toca aquí para iniciar</div>
+  </div>
 
-  <!-- Video con loop desactivado para que pueda detectar el final -->
-  <video id="video-360" src="video1.mp4" crossorigin="anonymous" playsinline webkit-playsinline style="display:none;"></video>
-
+  <!-- REPRODUCTOR DE VIDEO VR (Oculto hasta seleccionar destino) -->
   <div id="contenedor-vr">
     <!-- Ojo Izquierdo -->
     <div class="ojo">
       <a-scene embedded vr-mode-ui="enabled: false" style="width: 100%; height: 100%;">
-        <a-videosphere src="#video-360" rotation="0 -90 0"></a-videosphere>
-        <a-entity camera look-controls="magicWindowTrackingEnabled: true" position="0 1.6 0"></a-entity>
+        <a-videosphere id="v-sphere-left" rotation="0 -90 0"></a-videosphere>
+        <a-entity camera look-controls="magicWindowTrackingEnabled: true" position="0 1.6 0">
+          <!-- Punto de mira central para las gafas -->
+          <a-entity cursor="fuse: false; rayOrigin: mouse;"
+                    position="0 0 -1"
+                    geometry="primitive: ring; radiusInner: 0.01; radiusOuter: 0.015"
+                    material="color: white; shader: flat">
+          </a-entity>
+        </a-entity>
       </a-scene>
     </div>
 
     <!-- Ojo Derecho -->
     <div class="ojo">
       <a-scene embedded vr-mode-ui="enabled: false" style="width: 100%; height: 100%;">
-        <a-videosphere src="#video-360" rotation="0 -90 0"></a-videosphere>
+        <a-videosphere id="v-sphere-right" rotation="0 -90 0"></a-videosphere>
         <a-entity camera look-controls="magicWindowTrackingEnabled: true" position="0 1.6 0"></a-entity>
       </a-scene>
     </div>
   </div>
 
-  <script>
-    const video = document.getElementById('video-360');
-    const botonPlay = document.getElementById('boton-play');
-    const infoVideo = document.getElementById('info-video');
-    let reproduciendo = false;
-    let videoActual = 1; // 1 para video1.mp4, 2 para video2.mp4
+  <!-- Elemento de video oculto -->
+  <video id="video-reproductor" crossorigin="anonymous" playsinline webkit-playsinline style="display:none;"></video>
 
-    function iniciarExperiencia() {
-      if (!reproduciendo) {
-        video.play().then(() => {
-          reproduciendo = true;
-          botonPlay.textContent = "⏸ Pausar Video";
-        }).catch(err => {
-          console.log("Error al reproducir:", err);
-          alert("Asegúrate de que 'video1.mp4' y 'video2.mp4' estén subidos en GitHub.");
-        });
-      } else {
-        if (video.paused) {
-          video.play();
-          botonPlay.textContent = "⏸ Pausar Video";
+  <script>
+    const menuPrincipal = document.getElementById('menu-principal');
+    const contenedorVr = document.getElementById('contenedor-vr');
+    const video = document.getElementById('video-reproductor');
+    const vSphereLeft = document.getElementById('v-sphere-left');
+    const vSphereRight = document.getElementById('v-sphere-right');
+
+    let seleccionActual = 0;
+    const totalCuadros = 4;
+    let enSimulacion = false;
+
+    // Lista de videos asociados a los cuadros
+    const videosDestinos = [
+      "video1.mp4", // Cuadro 1: Estatua de la Libertad
+      "video2.mp4", // Cuadro 2: Monumento a Washington
+      "",           // Cuadro 3 (Vacío por ahora)
+      ""            // Cuadro 4 (Vacío por ahora)
+    ];
+
+    // Actualizar aspecto visual de los cuadros en el menú
+    function actualizarMenuVisual() {
+      for (let i = 0; i < totalCuadros; i++) {
+        const el = document.getElementById('c' + i);
+        if (i === seleccionActual) {
+          el.classList.add('activo');
         } else {
-          video.pause();
-          botonPlay.textContent = "▶ Reproducir Video";
+          el.classList.remove('activo');
         }
       }
+    }
 
+    // Iniciar simulación con el destino seleccionado
+    function seleccionarDestino(index) {
+      const videoFile = videosDestinos[index];
+      if (!videoFile) {
+        alert("Este destino aún no tiene video asignado.");
+        return;
+      }
+
+      enSimulacion = true;
+      menuPrincipal.style.display = 'none';
+      contenedorVr.style.display = 'flex';
+
+      // Asignar fuente y reproducir
+      video.src = videoFile;
+      video.play().then(() => {
+        vSphereLeft.setAttribute("src", "#video-reproductor");
+        vSphereRight.setAttribute("src", "#video-reproductor");
+      }).catch(err => {
+        console.log("Error al reproducir:", err);
+        alert("Asegúrate de que el archivo '" + videoFile + "' esté subido en GitHub.");
+        regresarAlMenu();
+      });
+
+      // Solicitar permisos de giroscopio en iOS
       if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
         DeviceOrientationEvent.requestPermission().catch(console.error);
       }
     }
 
-    // Detectar automáticamente cuando termina un video para pasar al siguiente
+    // Al finalizar el video, regresar al menú principal
     video.addEventListener('ended', () => {
-      if (videoActual === 1) {
-        videoActual = 2;
-        video.src = "video2.mp4";
-        infoVideo.textContent = "Reproduciendo: Video 2";
-        video.play().catch(err => console.log("Error al reproducir video 2:", err));
-      } else {
-        // Si quieres que vuelva al video 1 en bucle infinito, descomenta la siguiente línea:
-        // videoActual = 1; video.src = "video1.mp4"; infoVideo.textContent = "Reproduciendo: Video 1"; video.play();
+      regresarAlMenu();
+    });
+
+    function regresarAlMenu() {
+      video.pause();
+      video.src = "";
+      enSimulacion = false;
+      contenedorVr.style.display = 'none';
+      menuPrincipal.style.display = 'flex';
+    }
+
+    // Permitir clic táctil en el menú para iniciar también
+    document.getElementById('menu-principal').addEventListener('click', () => {
+      if (!enSimulacion) {
+        seleccionarDestino(seleccionActual);
       }
     });
 
-    // Control con el botón X del mando de PS4
-    let botonPresionado = false;
-    function revisarMando() {
+    // Control total mediante el Mando de PS4 (Gamepad API)
+    let botonXPronto = false;
+    let botonOptionsPronto = false;
+    let dpadAbajoPronto = false;
+    let dpadArribaPronto = false;
+
+    function bucleMandoPS4() {
       const gamepads = navigator.getGamepads();
       if (gamepads && gamepads[0]) {
-        const mando = gamepads[0];
-        const botonX = mando.buttons[0]; 
+        const m = gamepads[0];
+        
+        // Botón OPTIONS (Start) en mandos de PS4 suele ser el botón índice 9 o 3 (según versión de firmware)
+        const btnOptions = m.buttons[9] || m.buttons[3];
+        if (btnOptions && btnOptions.pressed && !botonOptionsPronto) {
+          botonOptionsPronto = true;
+          if (!enSimulacion) {
+            seleccionarDestino(seleccionActual);
+          }
+        } else if (btnOptions && !btnOptions.pressed) {
+          botonOptionsPronto = false;
+        }
 
-        if (botonX && botonX.pressed && !botonPresionado) {
-          botonPresionado = true;
-          iniciarExperiencia();
+        // Botón X (Cruz) - Índice 0
+        const botonX = m.buttons[0];
+        if (botonX && botonX.pressed && !botonXPronto) {
+          botonXPronto = true;
+          if (!enSimulacion) {
+            seleccionarDestino(seleccionActual);
+          }
         } else if (botonX && !botonX.pressed) {
-          botonPresionado = false;
+          botonXPronto = false;
+        }
+
+        // Navegación con la cruceta (D-Pad) o Joystick izquierdo para cambiar de cuadro en el menú
+        if (!enSimulacion) {
+          const axisY = m.axes[1]; // Eje vertical del joystick
+          // D-Pad Abajo (índice 13) o Joystick abajo
+          if ((m.buttons[13] && m.buttons[13].pressed || axisY > 0.5) && !dpadAbajoPronto) {
+            dpadAbajoPronto = true;
+            seleccionActual = (seleccionActual + 1) % totalCuadros;
+            actualizarMenuVisual();
+          } else if (!m.buttons[13] && axisY <= 0.5) {
+            dpadAbajoPronto = false;
+          }
+
+          // D-Pad Arriba (índice 12) o Joystick arriba
+          if ((m.buttons[12] && m.buttons[12].pressed || axisY < -0.5) && !dpadArribaPronto) {
+            dpadArribaPronto = true;
+            seleccionActual = (seleccionActual - 1 + totalCuadros) % totalCuadros;
+            actualizarMenuVisual();
+          } else if (!m.buttons[12] && axisY >= -0.5) {
+            dpadArribaPronto = false;
+          }
         }
       }
-      requestAnimationFrame(revisarMando);
+      requestAnimationFrame(bucleMandoPS4);
     }
 
     window.addEventListener("gamepadconnected", () => {
-      revisarMando();
+      bucleMandoPS4();
     });
   </script>
 </body>
