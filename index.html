@@ -106,7 +106,7 @@
       color: #aaa;
     }
 
-    /* Pantalla 3: Reproductor VR en Pantalla Dividida Estéreo forzada */
+    /* Pantalla 3: Visor VR con Pantalla Dividida en 2 Lentes Obligatoria */
     #contenedor-vr {
       display: none;
       width: 100vw;
@@ -117,22 +117,20 @@
       background: #000;
       z-index: 99997;
     }
-    
-    .ojo-dual {
+
+    .visor-dual {
       display: flex;
       width: 100vw;
       height: 100vh;
+      position: relative;
     }
 
-    .ojo {
+    .lente {
       width: 50vw;
       height: 100vh;
       overflow: hidden;
       position: relative;
-    }
-    
-    .ojo:first-child {
-      border-right: 2px solid #111;
+      border-right: 2px solid #000;
     }
   </style>
 </head>
@@ -157,37 +155,35 @@
     <div id="instruccion-menu">Usa la cruceta/joystick para moverte y presiona <b>X</b> para entrar</div>
   </div>
 
-  <!-- 3. REPRODUCTOR DE VIDEO VR EN PANTALLA DIVIDIDA ESTÉREO -->
+  <!-- 3. REPRODUCTOR VR DIVIDIDO EN 2 LENTES -->
   <div id="contenedor-vr">
-    <div class="ojo-dual">
-      <!-- Ojo Izquierdo -->
-      <div class="ojo">
+    <div class="visor-dual">
+      <!-- Lente Izquierdo -->
+      <div class="lente">
         <a-scene embedded vr-mode-ui="enabled: false" style="width: 100%; height: 100%;">
-          <a-videosphere id="v-sphere-left" rotation="0 -90 0"></a-videosphere>
+          <a-assets>
+            <video id="video-reproductor" crossorigin="anonymous" playsinline webkit-playsinline></video>
+          </a-assets>
+          <a-videosphere src="#video-reproductor" rotation="0 -90 0"></a-videosphere>
           <a-entity camera look-controls="magicWindowTrackingEnabled: true" position="0 1.6 0"></a-entity>
         </a-scene>
       </div>
 
-      <!-- Ojo Derecho -->
-      <div class="ojo">
+      <!-- Lente Derecho (Duplicado visual exacto) -->
+      <div class="lente">
         <a-scene embedded vr-mode-ui="enabled: false" style="width: 100%; height: 100%;">
-          <a-videosphere id="v-sphere-right" rotation="0 -90 0"></a-videosphere>
+          <a-videosphere src="#video-reproductor" rotation="0 -90 0"></a-videosphere>
           <a-entity camera look-controls="magicWindowTrackingEnabled: true" position="0 1.6 0"></a-entity>
         </a-scene>
       </div>
     </div>
   </div>
 
-  <!-- Elemento de video oculto -->
-  <video id="video-reproductor" crossorigin="anonymous" playsinline webkit-playsinline style="display:none;"></video>
-
   <script>
     const pantallaTitulo = document.getElementById('pantalla-titulo');
     const menuPrincipal = document.getElementById('menu-principal');
     const contenedorVr = document.getElementById('contenedor-vr');
     const video = document.getElementById('video-reproductor');
-    const vSphereLeft = document.getElementById('v-sphere-left');
-    const vSphereRight = document.getElementById('v-sphere-right');
 
     let estadoActual = "TITULO"; // "TITULO", "MENU", "VR"
     let seleccionActual = 0;
@@ -195,9 +191,9 @@
 
     const videosDestinos = [
       "video3.mp4", // Cuadro 1 (Estatua de la Libertad)
-      "video4.mp4", // Cuadro 2
-      "video5.mp4", // Cuadro 3
-      "video6.mp4"  // Cuadro 4
+      "video4.mp4", 
+      "video5.mp4", 
+      "video6.mp4"  
     ];
 
     function actualizarMenuVisual() {
@@ -213,20 +209,18 @@
 
     function irAlMenu() {
       if (estadoActual !== "TITULO") return;
-      // Activar animación de desvanecimiento
       pantallaTitulo.classList.add('ocultar');
       
       setTimeout(() => {
         pantallaTitulo.style.display = 'none';
         menuPrincipal.style.display = 'flex';
         estadoActual = "MENU";
-      }, 600); // Coincide con la duración de la transición CSS
+      }, 600);
     }
 
     function seleccionarDestino(index) {
       const videoFile = videosDestinos[index];
       
-      // Validar si el video está disponible (solo el cuadro 0 / video3.mp4)
       if (index > 0) {
         alert("Este destino (" + videoFile + ") estará disponible próximamente.");
         return;
@@ -234,15 +228,15 @@
 
       estadoActual = "VR";
       menuPrincipal.style.display = 'none';
-      contenedorVr.style.display = 'block'; // Fuerza la aparición de la pantalla dividida estéreo
+      contenedorVr.style.display = 'block'; // Fuerza la pantalla dividida en 2 lentes
 
       video.src = videoFile;
+      video.load();
       video.play().then(() => {
-        vSphereLeft.setAttribute("src", "#video-reproductor");
-        vSphereRight.setAttribute("src", "#video-reproductor");
+        console.log("Video reproduciéndose correctamente con imagen y sonido.");
       }).catch(err => {
         console.log("Error al reproducir el video:", err);
-        alert("Asegúrate de que el archivo 'video3.mp4' esté bien subido en GitHub y codificado en formato compatible (H.264).");
+        alert("No se pudo reproducir 'video3.mp4'. Verifica que esté subido correctamente en GitHub.");
         regresarAlMenu();
       });
 
@@ -276,7 +270,6 @@
       if (gamepads && gamepads[0]) {
         const m = gamepads[0];
         
-        // Botón OPTIONS (Start) - Índice 9 o 3
         const btnOptions = m.buttons[9] || m.buttons[3];
         if (btnOptions && btnOptions.pressed && !btnOptionsPronto) {
           btnOptionsPronto = true;
@@ -287,7 +280,6 @@
           btnOptionsPronto = false;
         }
 
-        // Botón X (Cruz) - Índice 0
         const botonX = m.buttons[0];
         if (botonX && botonX.pressed && !btnXPronto) {
           btnXPronto = true;
@@ -298,12 +290,10 @@
           btnXPronto = false;
         }
 
-        // Navegación en el menú con cruceta o joystick
         if (estadoActual === "MENU") {
           const axisY = m.axes[1];
           const axisX = m.axes[0];
 
-          // Abajo
           if ((m.buttons[13] && m.buttons[13].pressed || axisY > 0.5) && !dpadAbajoPronto) {
             dpadAbajoPronto = true;
             if (seleccionActual < 2) seleccionActual += 2;
@@ -312,7 +302,6 @@
             dpadAbajoPronto = false;
           }
 
-          // Arriba
           if ((m.buttons[12] && m.buttons[12].pressed || axisY < -0.5) && !dpadArribaPronto) {
             dpadArribaPronto = true;
             if (seleccionActual >= 2) seleccionActual -= 2;
@@ -321,7 +310,6 @@
             dpadArribaPronto = false;
           }
 
-          // Derecha
           if ((m.buttons[15] && m.buttons[15].pressed || axisX > 0.5) && !dpadDerechaPronto) {
             dpadDerechaPronto = true;
             if (seleccionActual % 2 === 0) seleccionActual += 1;
@@ -330,7 +318,6 @@
             dpadDerechaPronto = false;
           }
 
-          // Izquierda
           if ((m.buttons[14] && m.buttons[14].pressed || axisX < -0.5) && !dpadIzquierdaPronto) {
             dpadIzquierdaPronto = true;
             if (seleccionActual % 2 === 1) seleccionActual -= 1;
