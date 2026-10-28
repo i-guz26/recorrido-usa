@@ -90,7 +90,7 @@
       <div class="cuadro" id="c2">3. Próximamente</div>
       <div class="cuadro" id="c3">4. Próximamente</div>
     </div>
-    <div id="instruccion-inicio">Presiona el botón <b>OPTIONS (Start)</b> o toca aquí para iniciar</div>
+    <div id="instruccion-inicio">Presiona el botón <b>OPTIONS (Start)</b> o la <b>X</b> para iniciar</div>
   </div>
 
   <!-- REPRODUCTOR DE VIDEO VR (Oculto hasta seleccionar destino) -->
@@ -100,7 +100,6 @@
       <a-scene embedded vr-mode-ui="enabled: false" style="width: 100%; height: 100%;">
         <a-videosphere id="v-sphere-left" rotation="0 -90 0"></a-videosphere>
         <a-entity camera look-controls="magicWindowTrackingEnabled: true" position="0 1.6 0">
-          <!-- Punto de mira central para las gafas -->
           <a-entity cursor="fuse: false; rayOrigin: mouse;"
                     position="0 0 -1"
                     geometry="primitive: ring; radiusInner: 0.01; radiusOuter: 0.015"
@@ -133,15 +132,14 @@
     const totalCuadros = 4;
     let enSimulacion = false;
 
-    // Lista de videos asociados a los cuadros
+    // Relación de cuadros con los videos solicitados
     const videosDestinos = [
-      "video1.mp4", // Cuadro 1: Estatua de la Libertad
-      "video2.mp4", // Cuadro 2: Monumento a Washington
-      "",           // Cuadro 3 (Vacío por ahora)
-      ""            // Cuadro 4 (Vacío por ahora)
+      "video3.mp4", // Cuadro 1: Estatua de la Libertad (Funciona)
+      "video4.mp4", // Cuadro 2 (Próximamente)
+      "video5.mp4", // Cuadro 3 (Próximamente)
+      "video6.mp4"  // Cuadro 4 (Próximamente)
     ];
 
-    // Actualizar aspecto visual de los cuadros en el menú
     function actualizarMenuVisual() {
       for (let i = 0; i < totalCuadros; i++) {
         const el = document.getElementById('c' + i);
@@ -153,11 +151,12 @@
       }
     }
 
-    // Iniciar simulación con el destino seleccionado
     function seleccionarDestino(index) {
       const videoFile = videosDestinos[index];
-      if (!videoFile) {
-        alert("Este destino aún no tiene video asignado.");
+      
+      // Validar si el video existe (especialmente para los cuadros 2, 3 y 4 que aún no tienen archivo)
+      if (index > 0) {
+        alert("Este destino (" + videoFile + ") estará disponible próximamente.");
         return;
       }
 
@@ -165,7 +164,6 @@
       menuPrincipal.style.display = 'none';
       contenedorVr.style.display = 'flex';
 
-      // Asignar fuente y reproducir
       video.src = videoFile;
       video.play().then(() => {
         vSphereLeft.setAttribute("src", "#video-reproductor");
@@ -176,13 +174,11 @@
         regresarAlMenu();
       });
 
-      // Solicitar permisos de giroscopio en iOS
       if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
         DeviceOrientationEvent.requestPermission().catch(console.error);
       }
     }
 
-    // Al finalizar el video, regresar al menú principal
     video.addEventListener('ended', () => {
       regresarAlMenu();
     });
@@ -195,14 +191,12 @@
       menuPrincipal.style.display = 'flex';
     }
 
-    // Permitir clic táctil en el menú para iniciar también
     document.getElementById('menu-principal').addEventListener('click', () => {
       if (!enSimulacion) {
         seleccionarDestino(seleccionActual);
       }
     });
 
-    // Control total mediante el Mando de PS4 (Gamepad API)
     let botonXPronto = false;
     let botonOptionsPronto = false;
     let dpadAbajoPronto = false;
@@ -213,7 +207,6 @@
       if (gamepads && gamepads[0]) {
         const m = gamepads[0];
         
-        // Botón OPTIONS (Start) en mandos de PS4 suele ser el botón índice 9 o 3 (según versión de firmware)
         const btnOptions = m.buttons[9] || m.buttons[3];
         if (btnOptions && btnOptions.pressed && !botonOptionsPronto) {
           botonOptionsPronto = true;
@@ -224,7 +217,6 @@
           botonOptionsPronto = false;
         }
 
-        // Botón X (Cruz) - Índice 0
         const botonX = m.buttons[0];
         if (botonX && botonX.pressed && !botonXPronto) {
           botonXPronto = true;
@@ -235,10 +227,8 @@
           botonXPronto = false;
         }
 
-        // Navegación con la cruceta (D-Pad) o Joystick izquierdo para cambiar de cuadro en el menú
         if (!enSimulacion) {
-          const axisY = m.axes[1]; // Eje vertical del joystick
-          // D-Pad Abajo (índice 13) o Joystick abajo
+          const axisY = m.axes[1];
           if ((m.buttons[13] && m.buttons[13].pressed || axisY > 0.5) && !dpadAbajoPronto) {
             dpadAbajoPronto = true;
             seleccionActual = (seleccionActual + 1) % totalCuadros;
@@ -247,7 +237,6 @@
             dpadAbajoPronto = false;
           }
 
-          // D-Pad Arriba (índice 12) o Joystick arriba
           if ((m.buttons[12] && m.buttons[12].pressed || axisY < -0.5) && !dpadArribaPronto) {
             dpadArribaPronto = true;
             seleccionActual = (seleccionActual - 1 + totalCuadros) % totalCuadros;
