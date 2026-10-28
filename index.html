@@ -8,7 +8,7 @@
   <style>
     body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background-color: #000; font-family: sans-serif; }
     
-    /* Pantalla 1: Título y Banderas */
+    /* Pantalla 1: Título y Banderas con transición animada */
     #pantalla-titulo {
       position: fixed;
       top: 0;
@@ -23,6 +23,13 @@
       z-index: 99999;
       color: white;
       text-align: center;
+      transition: opacity 0.6s ease, transform 0.6s ease;
+    }
+
+    #pantalla-titulo.ocultar {
+      opacity: 0;
+      transform: scale(1.05);
+      pointer-events: none;
     }
 
     #pantalla-titulo h1 {
@@ -99,14 +106,24 @@
       color: #aaa;
     }
 
-    /* Pantalla 3: Reproductor VR en Pantalla Dividida */
+    /* Pantalla 3: Reproductor VR en Pantalla Dividida Estéreo forzada */
     #contenedor-vr {
       display: none;
       width: 100vw;
       height: 100vh;
-      position: relative;
+      position: fixed;
+      top: 0;
+      left: 0;
+      background: #000;
+      z-index: 99997;
     }
     
+    .ojo-dual {
+      display: flex;
+      width: 100vw;
+      height: 100vh;
+    }
+
     .ojo {
       width: 50vw;
       height: 100vh;
@@ -115,7 +132,7 @@
     }
     
     .ojo:first-child {
-      border-right: 2px solid #000;
+      border-right: 2px solid #111;
     }
   </style>
 </head>
@@ -140,22 +157,24 @@
     <div id="instruccion-menu">Usa la cruceta/joystick para moverte y presiona <b>X</b> para entrar</div>
   </div>
 
-  <!-- 3. REPRODUCTOR DE VIDEO VR -->
+  <!-- 3. REPRODUCTOR DE VIDEO VR EN PANTALLA DIVIDIDA ESTÉREO -->
   <div id="contenedor-vr">
-    <!-- Ojo Izquierdo -->
-    <div class="ojo">
-      <a-scene embedded vr-mode-ui="enabled: false" style="width: 100%; height: 100%;">
-        <a-videosphere id="v-sphere-left" rotation="0 -90 0"></a-videosphere>
-        <a-entity camera look-controls="magicWindowTrackingEnabled: true" position="0 1.6 0"></a-entity>
-      </a-scene>
-    </div>
+    <div class="ojo-dual">
+      <!-- Ojo Izquierdo -->
+      <div class="ojo">
+        <a-scene embedded vr-mode-ui="enabled: false" style="width: 100%; height: 100%;">
+          <a-videosphere id="v-sphere-left" rotation="0 -90 0"></a-videosphere>
+          <a-entity camera look-controls="magicWindowTrackingEnabled: true" position="0 1.6 0"></a-entity>
+        </a-scene>
+      </div>
 
-    <!-- Ojo Derecho -->
-    <div class="ojo">
-      <a-scene embedded vr-mode-ui="enabled: false" style="width: 100%; height: 100%;">
-        <a-videosphere id="v-sphere-right" rotation="0 -90 0"></a-videosphere>
-        <a-entity camera look-controls="magicWindowTrackingEnabled: true" position="0 1.6 0"></a-entity>
-      </a-scene>
+      <!-- Ojo Derecho -->
+      <div class="ojo">
+        <a-scene embedded vr-mode-ui="enabled: false" style="width: 100%; height: 100%;">
+          <a-videosphere id="v-sphere-right" rotation="0 -90 0"></a-videosphere>
+          <a-entity camera look-controls="magicWindowTrackingEnabled: true" position="0 1.6 0"></a-entity>
+        </a-scene>
+      </div>
     </div>
   </div>
 
@@ -193,15 +212,21 @@
     }
 
     function irAlMenu() {
-      pantallaTitulo.style.display = 'none';
-      menuPrincipal.style.display = 'flex';
-      estadoActual = "MENU";
+      if (estadoActual !== "TITULO") return;
+      // Activar animación de desvanecimiento
+      pantallaTitulo.classList.add('ocultar');
+      
+      setTimeout(() => {
+        pantallaTitulo.style.display = 'none';
+        menuPrincipal.style.display = 'flex';
+        estadoActual = "MENU";
+      }, 600); // Coincide con la duración de la transición CSS
     }
 
     function seleccionarDestino(index) {
       const videoFile = videosDestinos[index];
       
-      // Validar si el video está disponible (solo el cuadro 0 / video3.mp4 por ahora)
+      // Validar si el video está disponible (solo el cuadro 0 / video3.mp4)
       if (index > 0) {
         alert("Este destino (" + videoFile + ") estará disponible próximamente.");
         return;
@@ -209,15 +234,15 @@
 
       estadoActual = "VR";
       menuPrincipal.style.display = 'none';
-      contenedorVr.style.display = 'flex';
+      contenedorVr.style.display = 'block'; // Fuerza la aparición de la pantalla dividida estéreo
 
       video.src = videoFile;
       video.play().then(() => {
         vSphereLeft.setAttribute("src", "#video-reproductor");
         vSphereRight.setAttribute("src", "#video-reproductor");
       }).catch(err => {
-        console.log("Error al reproducir:", err);
-        alert("Asegúrate de que el archivo '" + videoFile + "' esté subido en GitHub.");
+        console.log("Error al reproducir el video:", err);
+        alert("Asegúrate de que el archivo 'video3.mp4' esté bien subido en GitHub y codificado en formato compatible (H.264).");
         regresarAlMenu();
       });
 
@@ -278,16 +303,16 @@
           const axisY = m.axes[1];
           const axisX = m.axes[0];
 
-          // Abajo (D-pad 13 o eje Y positivo)
+          // Abajo
           if ((m.buttons[13] && m.buttons[13].pressed || axisY > 0.5) && !dpadAbajoPronto) {
             dpadAbajoPronto = true;
-            if (seleccionActual < 2) seleccionActual += 2; // Salto de fila en la grilla de 2x2
+            if (seleccionActual < 2) seleccionActual += 2;
             actualizarMenuVisual();
           } else if (!(m.buttons[13] && m.buttons[13].pressed) && axisY <= 0.5) {
             dpadAbajoPronto = false;
           }
 
-          // Arriba (D-pad 12 o eje Y negativo)
+          // Arriba
           if ((m.buttons[12] && m.buttons[12].pressed || axisY < -0.5) && !dpadArribaPronto) {
             dpadArribaPronto = true;
             if (seleccionActual >= 2) seleccionActual -= 2;
@@ -296,21 +321,21 @@
             dpadArribaPronto = false;
           }
 
-          // Derecha (D-pad 15 o eje X positivo)
+          // Derecha
           if ((m.buttons[15] && m.buttons[15].pressed || axisX > 0.5) && !dpadDerechaPronto) {
             dpadDerechaPronto = true;
-            if (seleccionActual % 2 === 0) seleccionActual += 1; // Moverse a la columna derecha
+            if (seleccionActual % 2 === 0) seleccionActual += 1;
             actualizarMenuVisual();
           } else if (!(m.buttons[15] && m.buttons[15].pressed) && axisX <= 0.5) {
             dpadDerechaPronto = false;
           }
 
-          // Izquierda (D-pad 14 o eje X negativo)
+          // Izquierda
           if ((m.buttons[14] && m.buttons[14].pressed || axisX < -0.5) && !dpadIzquierdaPronto) {
             dpadIzquierdaPronto = true;
-            if (seleccionActual % 2 === 1) seleccionActual -= 1; // Moverse a la columna izquierda
+            if (seleccionActual % 2 === 1) seleccionActual -= 1;
             actualizarMenuVisual();
-          } else if (!(m.buttons[14] && m.buttons[14].pressed) && axisX >= -0.5) {
+          } else if (!(m.buttons[14] && m.buttons[14].pressed) && axisX <= 0.5) {
             dpadIzquierdaPronto = false;
           }
         }
