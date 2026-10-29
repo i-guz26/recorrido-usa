@@ -65,7 +65,7 @@
       pointer-events: none;
     }
 
-    /* Status Bar del Control */
+    /* Status Bar del Control (Fijo y Sólido) */
     .controller-status {
       position: absolute;
       top: 15px;
@@ -74,7 +74,7 @@
       letter-spacing: 1px;
       padding: 4px 10px;
       border-radius: 12px;
-      background: rgba(0, 0, 0, 0.6);
+      background: rgba(0, 0, 0, 0.85);
       border: 1px solid #333;
       color: #ff3b30;
       z-index: 100;
@@ -82,7 +82,8 @@
 
     .controller-status.connected {
       color: #34c759;
-      border-color: rgba(52, 199, 89, 0.4);
+      border-color: rgba(52, 199, 89, 0.6);
+      background: rgba(5, 20, 10, 0.9);
     }
 
     /* Pantalla 1: Title Screen */
@@ -296,7 +297,7 @@
     </div>
   </div>
 
-  <!-- STEREO VR VIEWPORT (360 CAMERA & GAZE CURSOR) -->
+  <!-- STEREO VR VIEWPORT (Sin puntero molesto, vista limpia) -->
   <div class="escena-vr" id="contenedor-vr-global">
     <div style="display: flex; width: 100vw; height: 100vh;">
       <!-- Left Screen VR -->
@@ -306,18 +307,14 @@
             <video id="video-reproductor" crossorigin="anonymous" playsinline webkit-playsinline></video>
           </a-assets>
           <a-videosphere src="#video-reproductor" rotation="0 -90 0"></a-videosphere>
-          <a-entity camera look-controls="magicWindowTrackingEnabled: true" position="0 1.6 0">
-            <a-entity cursor="fuse: false" position="0 0 -1" geometry="primitive: ring; radiusInner: 0.008; radiusOuter: 0.012" material="color: #ff6600; shader: flat; opacity: 0.8"></a-entity>
-          </a-entity>
+          <a-entity camera look-controls="magicWindowTrackingEnabled: true" position="0 1.6 0"></a-entity>
         </a-scene>
       </div>
       <!-- Right Screen VR -->
       <div style="width: 50vw; height: 100vh;">
         <a-scene embedded vr-mode-ui="enabled: false" style="width: 100%; height: 100%;">
           <a-videosphere src="#video-reproductor" rotation="0 -90 0"></a-videosphere>
-          <a-entity camera look-controls="magicWindowTrackingEnabled: true" position="0 1.6 0">
-            <a-entity cursor="fuse: false" position="0 0 -1" geometry="primitive: ring; radiusInner: 0.008; radiusOuter: 0.012" material="color: #ff6600; shader: flat; opacity: 0.8"></a-entity>
-          </a-entity>
+          <a-entity camera look-controls="magicWindowTrackingEnabled: true" position="0 1.6 0"></a-entity>
         </a-scene>
       </div>
     </div>
@@ -475,7 +472,8 @@
       }, 600);
     }
 
-    // PS4 Controller Gamepad API Loop
+    // PS4 Controller Gamepad API Loop con estado de conexión sólido
+    let controladorConectadoPrevio = false;
     let btnXPronto = false;
     let btnCirclePronto = false;
     let btnTrianglePronto = false;
@@ -504,100 +502,111 @@
 
     function bucleMandoPS4() {
       const gamepads = navigator.getGamepads();
-      if (gamepads && gamepads[0]) {
-        actualizarHUDControl(true);
-        const m = gamepads[0];
-        
-        // OPTIONS / Start
-        const btnOptions = m.buttons[9] || m.buttons[3];
-        if (btnOptions && btnOptions.pressed && !btnOptionsPronto) {
-          btnOptionsPronto = true;
-          if (estadoActual === "TITULO") { irAlMenu(); }
-        } else if (btnOptions && !btnOptions.pressed) {
-          btnOptionsPronto = false;
-        }
+      let hayControl = false;
 
-        // Cross (X)
-        const botonX = m.buttons[0];
-        if (botonX && botonX.pressed && !btnXPronto) {
-          btnXPronto = true;
-          if (estadoActual === "MENU") { seleccionarDestino(seleccionActual); }
-        } else if (botonX && !botonX.pressed) {
-          btnXPronto = false;
-        }
+      if (gamepads) {
+        for (let i = 0; i < gamepads.length; i++) {
+          if (gamepads[i]) {
+            hayControl = true;
+            const m = gamepads[i];
+            
+            // OPTIONS / Start
+            const btnOptions = m.buttons[9] || m.buttons[3];
+            if (btnOptions && btnOptions.pressed && !btnOptionsPronto) {
+              btnOptionsPronto = true;
+              if (estadoActual === "TITULO") { irAlMenu(); }
+            } else if (btnOptions && !btnOptions.pressed) {
+              btnOptionsPronto = false;
+            }
 
-        // Triangle (△)
-        const botonTriangle = m.buttons[3];
-        if (botonTriangle && botonTriangle.pressed && !btnTrianglePronto) {
-          btnTrianglePronto = true;
-          if (estadoActual === "VR") { regresarAlMenuConAnimacion(); }
-        } else if (botonTriangle && !botonTriangle.pressed) {
-          btnTrianglePronto = false;
-        }
+            // Cross (X)
+            const botonX = m.buttons[0];
+            if (botonX && botonX.pressed && !btnXPronto) {
+              btnXPronto = true;
+              if (estadoActual === "MENU") { seleccionarDestino(seleccionActual); }
+            } else if (botonX && !botonX.pressed) {
+              btnXPronto = false;
+            }
 
-        // Circle (O)
-        const botonCircle = m.buttons[1];
-        if (botonCircle && botonCircle.pressed && !btnCirclePronto) {
-          btnCirclePronto = true;
-          if (estadoActual === "ERROR") { cerrarError(); }
-        } else if (botonCircle && !botonCircle.pressed) {
-          btnCirclePronto = false;
-        }
+            // Triangle (△)
+            const botonTriangle = m.buttons[3];
+            if (botonTriangle && botonTriangle.pressed && !btnTrianglePronto) {
+              btnTrianglePronto = true;
+              if (estadoActual === "VR") { regresarAlMenuConAnimacion(); }
+            } else if (botonTriangle && !botonTriangle.pressed) {
+              btnTrianglePronto = false;
+            }
 
-        // SHARE (F5)
-        const botonShare = m.buttons[8] || m.buttons[10];
-        if (botonShare && botonShare.pressed && !btnSharePronto) {
-          btnSharePronto = true;
-          reproducirSonido(650, 'sine', 0.1);
-          setTimeout(() => { location.reload(); }, 200);
-        } else if (botonShare && !botonShare.pressed) {
-          btnSharePronto = false;
-        }
+            // Circle (O)
+            const botonCircle = m.buttons[1];
+            if (botonCircle && botonCircle.pressed && !btnCirclePronto) {
+              btnCirclePronto = true;
+              if (estadoActual === "ERROR") { cerrarError(); }
+            } else if (botonCircle && !botonCircle.pressed) {
+              btnCirclePronto = false;
+            }
 
-        // D-Pad / Joysticks
-        if (estadoActual === "MENU") {
-          const axisY = m.axes[1];
-          const axisX = m.axes[0];
+            // SHARE (F5)
+            const botonShare = m.buttons[8] || m.buttons[10];
+            if (botonShare && botonShare.pressed && !btnSharePronto) {
+              btnSharePronto = true;
+              reproducirSonido(650, 'sine', 0.1);
+              setTimeout(() => { location.reload(); }, 200);
+            } else if (botonShare && !botonShare.pressed) {
+              btnSharePronto = false;
+            }
 
-          if ((m.buttons[13] && m.buttons[13].pressed || axisY > 0.5) && !dpadAbajoPronto) {
-            dpadAbajoPronto = true;
-            if (seleccionActual < 2) seleccionActual += 2;
-            actualizarMenuVisual();
-          } else if (!(m.buttons[13] && m.buttons[13].pressed) && axisY <= 0.5) {
-            dpadAbajoPronto = false;
+            // D-Pad / Joysticks
+            if (estadoActual === "MENU") {
+              const axisY = m.axes[1];
+              const axisX = m.axes[0];
+
+              if ((m.buttons[13] && m.buttons[13].pressed || axisY > 0.5) && !dpadAbajoPronto) {
+                dpadAbajoPronto = true;
+                if (seleccionActual < 2) seleccionActual += 2;
+                actualizarMenuVisual();
+              } else if (!(m.buttons[13] && m.buttons[13].pressed) && axisY <= 0.5) {
+                dpadAbajoPronto = false;
+              }
+
+              if ((m.buttons[12] && m.buttons[12].pressed || axisY < -0.5) && !dpadArribaPronto) {
+                dpadArribaPronto = true;
+                if (seleccionActual >= 2) seleccionActual -= 2;
+                actualizarMenuVisual();
+              } else if (!(m.buttons[12] && m.buttons[12].pressed) && axisY >= -0.5) {
+                dpadArribaPronto = false;
+              }
+
+              if ((m.buttons[15] && m.buttons[15].pressed || axisX > 0.5) && !dpadDerechaPronto) {
+                dpadDerechaPronto = true;
+                if (seleccionActual % 2 === 0) seleccionActual += 1;
+                actualizarMenuVisual();
+              } else if (!(m.buttons[15] && m.buttons[15].pressed) && axisX <= 0.5) {
+                dpadDerechaPronto = false;
+              }
+
+              if ((m.buttons[14] && m.buttons[14].pressed || axisX < -0.5) && !dpadIzquierdaPronto) {
+                dpadIzquierdaPronto = true;
+                if (seleccionActual % 2 === 1) seleccionActual -= 1;
+                actualizarMenuVisual();
+              } else if (!(m.buttons[14] && m.buttons[14].pressed) && axisX <= 0.5) {
+                dpadIzquierdaPronto = false;
+              }
+            }
+            break; // Tomar el primer mando activo
           }
-
-          if ((m.buttons[12] && m.buttons[12].pressed || axisY < -0.5) && !dpadArribaPronto) {
-            dpadArribaPronto = true;
-            if (seleccionActual >= 2) seleccionActual -= 2;
-            actualizarMenuVisual();
-          } else if (!(m.buttons[12] && m.buttons[12].pressed) && axisY >= -0.5) {
-            dpadArribaPronto = false;
-          }
-
-          if ((m.buttons[15] && m.buttons[15].pressed || axisX > 0.5) && !dpadDerechaPronto) {
-            dpadDerechaPronto = true;
-            if (seleccionActual % 2 === 0) seleccionActual += 1;
-            actualizarMenuVisual();
-          } else if (!(m.buttons[15] && m.buttons[15].pressed) && axisX <= 0.5) {
-            dpadDerechaPronto = false;
-          }
-
-          if ((m.buttons[14] && m.buttons[14].pressed || axisX < -0.5) && !dpadIzquierdaPronto) {
-            dpadIzquierdaPronto = true;
-            if (seleccionActual % 2 === 1) seleccionActual -= 1;
-            actualizarMenuVisual();
-          } else if (!(m.buttons[14] && m.buttons[14].pressed) && axisX <= 0.5) {
-            dpadIzquierdaPronto = false;
-          }
         }
-      } else {
-        actualizarHUDControl(false);
       }
+
+      actualizarHUDControl(hayControl);
       requestAnimationFrame(bucleMandoPS4);
     }
 
-    window.addEventListener("gamepadconnected", () => { bucleMandoPS4(); });
+    window.addEventListener("gamepadconnected", (e) => { actualizarHUDControl(true); });
+    window.addEventListener("gamepaddisconnected", (e) => { actualizarHUDControl(false); });
+
+    // Iniciar loop de lectura del mando
+    requestAnimationFrame(bucleMandoPS4);
   </script>
 </body>
 </html>
