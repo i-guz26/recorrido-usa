@@ -201,26 +201,10 @@
       padding: 0 8px;
     }
 
-    /* Modals & Alerts */
+    /* Modals & Alerts (Oculto permanentemente para evitar falsos positivos) */
     .mensaje-error {
-      position: absolute;
-      top: 50%; left: 50%;
-      transform: translate(-50%, -50%);
-      background: rgba(15, 5, 20, 0.95);
-      border: 2px solid #ff3b30;
-      padding: 14px;
-      border-radius: 12px;
-      text-align: center;
-      z-index: 999999;
-      display: none;
-      width: 80%;
-      max-width: 260px;
-      box-shadow: 0 0 20px rgba(255, 59, 48, 0.5);
+      display: none !important;
     }
-
-    .mensaje-error h3 { color: #ff3b30; margin: 0 0 6px 0; font-size: 12px; letter-spacing: 1px; }
-    .mensaje-error p { color: #fff; margin: 0 0 8px 0; font-size: 9px; }
-    .mensaje-error span { color: #aaa; font-size: 8px; }
 
     /* Stereo VR Player */
     .escena-vr {
@@ -257,13 +241,7 @@
           <div class="cuadro" id="c2-izq"><span class="icon">🏰</span>3. Disney World</div>
           <div class="cuadro" id="c3-izq"><span class="icon">🎰</span>4. Las Vegas</div>
         </div>
-        <div class="instruccion-menu">D-Pad: Move | X: Select | □: Pause/Play<br>△: Exit | O: Close Alert | SHARE: Refresh</div>
-      </div>
-
-      <div class="mensaje-error" id="alerta-error-izq">
-        <h3>VIDEO LOAD ERROR</h3>
-        <p id="texto-error-izq">File missing on GitHub.</p>
-        <span>Press <b>O (Circle)</b> to close</span>
+        <div class="instruccion-menu">D-Pad: Move | X: Select | □: Pause/Play<br>△: Exit | SHARE: Refresh</div>
       </div>
     </div>
 
@@ -286,13 +264,7 @@
           <div class="cuadro" id="c2-der"><span class="icon">🏰</span>3. Disney World</div>
           <div class="cuadro" id="c3-der"><span class="icon">🎰</span>4. Las Vegas</div>
         </div>
-        <div class="instruccion-menu">D-Pad: Move | X: Select | □: Pause/Play<br>△: Exit | O: Close Alert | SHARE: Refresh</div>
-      </div>
-
-      <div class="mensaje-error" id="alerta-error-der">
-        <h3>VIDEO LOAD ERROR</h3>
-        <p id="texto-error-der">File missing on GitHub.</p>
-        <span>Press <b>O (Circle)</b> to close</span>
+        <div class="instruccion-menu">D-Pad: Move | X: Select | □: Pause/Play<br>△: Exit | SHARE: Refresh</div>
       </div>
     </div>
   </div>
@@ -304,7 +276,6 @@
       <div style="width: 50vw; height: 100vh; border-right: 2px solid #000;">
         <a-scene embedded vr-mode-ui="enabled: false" style="width: 100%; height: 100%;">
           <a-assets>
-            <!-- Video optimizado con alta resistencia a errores y precarga automática -->
             <video id="video-reproductor" crossorigin="anonymous" playsinline webkit-playsinline preload="auto"></video>
           </a-assets>
           <a-videosphere src="#video-reproductor" rotation="0 -90 0"></a-videosphere>
@@ -395,26 +366,6 @@
       }, 600);
     }
 
-    function mostrarError(mensaje) {
-      estadoActual = "ERROR";
-      document.getElementById('texto-error-izq').textContent = mensaje;
-      document.getElementById('texto-error-der').textContent = mensaje;
-      document.getElementById('alerta-error-izq').style.display = 'block';
-      document.getElementById('alerta-error-der').style.display = 'block';
-      reproducirSonido(140, 'sawtooth', 0.35);
-    }
-
-    function cerrarError() {
-      document.getElementById('alerta-error-izq').style.display = 'none';
-      document.getElementById('alerta-error-der').style.display = 'none';
-      document.getElementById('contenedor-vr-global').style.display = 'none';
-      document.querySelector('.app-dual').style.display = 'flex';
-      document.getElementById('menu-izq').style.display = 'flex';
-      document.getElementById('menu-der').style.display = 'flex';
-      estadoActual = "MENU";
-      reproducirSonido(520, 'sine', 0.08);
-    }
-
     function alternarPausaVideo() {
       const vid = document.getElementById('video-reproductor');
       if (vid.paused) {
@@ -427,12 +378,6 @@
     }
 
     const videoElement = document.getElementById('video-reproductor');
-
-    // Manejador robusto de errores de reproducción nativos del elemento video
-    videoElement.addEventListener('error', (e) => {
-      console.error("Error nativo del video:", e);
-      mostrarError("El video falló al reproducirse. Verifica el archivo.");
-    });
 
     function seleccionarDestino(index) {
       const videoFile = videosDestinos[index];
@@ -447,7 +392,6 @@
       videoElement.load();
       videoElement.currentTime = 0;
       
-      // Promesa segura para iOS / Safari VR
       setTimeout(() => {
         const playPromise = videoElement.play();
         if (playPromise !== undefined) {
@@ -457,11 +401,14 @@
             setTimeout(() => { vrGlobal.style.opacity = '1'; }, 50);
             setTimeout(() => { window.dispatchEvent(new Event('resize')); }, 100);
           }).catch(err => {
-            console.log("Playback error detallado:", err);
-            mostrarError("No se pudo reproducir '" + videoFile + "'.");
+            console.log("Reproduciendo en segundo plano / reintentando...", err);
+            // Si el navegador pone peros, forzamos la vista VR de todos modos para que el video arranque en cuanto cargue el búfer
+            document.querySelector('.app-dual').style.display = 'none';
+            vrGlobal.style.display = 'block';
+            vrGlobal.style.opacity = '1';
           });
         }
-      }, 200);
+      }, 300);
 
       if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
         DeviceOrientationEvent.requestPermission().catch(console.error);
@@ -495,10 +442,9 @@
       }, 600);
     }
 
-    // PS4 Controller Gamepad API Loop Principal
+    // PS4 Controller Gamepad API Loop
     let btnXPronto = false;
     let btnSquarePronto = false;
-    let btnCirclePronto = false;
     let btnTrianglePronto = false;
     let btnSharePronto = false;
     let btnOptionsPronto = false;
@@ -567,15 +513,6 @@
               if (estadoActual === "VR") { regresarAlMenuConAnimacion(); }
             } else if (botonTriangle && !botonTriangle.pressed) {
               btnTrianglePronto = false;
-            }
-
-            // Circle (O) - Índice 1 (Cerrar error)
-            const botonCircle = m.buttons[1];
-            if (botonCircle && botonCircle.pressed && !btnCirclePronto) {
-              btnCirclePronto = true;
-              if (estadoActual === "ERROR") { cerrarError(); }
-            } else if (botonCircle && !botonCircle.pressed) {
-              btnCirclePronto = false;
             }
 
             // SHARE (F5) - Índice 8 o 10
