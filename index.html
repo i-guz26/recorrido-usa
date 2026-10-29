@@ -257,7 +257,7 @@
           <div class="cuadro" id="c2-izq"><span class="icon">🏰</span>3. Disney World</div>
           <div class="cuadro" id="c3-izq"><span class="icon">🎰</span>4. Las Vegas</div>
         </div>
-        <div class="instruccion-menu">D-Pad: Move | X: Select | □: Pause/Play<br>△: Exit | O: Close Alert | SHARE: Refresh (F5)</div>
+        <div class="instruccion-menu">D-Pad: Move | X: Select | □: Pause/Play<br>R2/L2: Vol +/- | △: Exit | SHARE: Refresh</div>
       </div>
 
       <div class="mensaje-error" id="alerta-error-izq">
@@ -286,7 +286,7 @@
           <div class="cuadro" id="c2-der"><span class="icon">🏰</span>3. Disney World</div>
           <div class="cuadro" id="c3-der"><span class="icon">🎰</span>4. Las Vegas</div>
         </div>
-        <div class="instruccion-menu">D-Pad: Move | X: Select | □: Pause/Play<br>△: Exit | O: Close Alert | SHARE: Refresh (F5)</div>
+        <div class="instruccion-menu">D-Pad: Move | X: Select | □: Pause/Play<br>R2/L2: Vol +/- | △: Exit | SHARE: Refresh</div>
       </div>
 
       <div class="mensaje-error" id="alerta-error-der">
@@ -425,6 +425,14 @@
       }
     }
 
+    function cambiarVolumen(delta) {
+      const vid = document.getElementById('video-reproductor');
+      if (vid) {
+        let nuevoVol = Math.min(1, Math.max(0, vid.volume + delta));
+        vid.volume = nuevoVol;
+      }
+    }
+
     function seleccionarDestino(index) {
       const videoFile = videosDestinos[index];
       sonidoEntradaVR();
@@ -434,6 +442,7 @@
       const vid = document.getElementById('video-reproductor');
       
       vid.src = videoFile;
+      vid.volume = 1.0;
       vid.load();
       vid.currentTime = 0;
       
@@ -521,7 +530,7 @@
             hayControl = true;
             const m = gamepads[i];
             
-            // OPTIONS / Start (Índice 9 o 3)
+            // OPTIONS / Start
             const btnOptions = m.buttons[9] || m.buttons[3];
             if (btnOptions && btnOptions.pressed && !btnOptionsPronto) {
               btnOptionsPronto = true;
@@ -546,6 +555,15 @@
               if (estadoActual === "VR") { alternarPausaVideo(); }
             } else if (botonSquare && !botonSquare.pressed) {
               btnSquarePronto = false;
+            }
+
+            // Gatillos R2 / L2 (Volumen en VR)
+            if (estadoActual === "VR") {
+              const r2Pressed = (m.buttons[7] && m.buttons[7].pressed) || (m.buttons[7] && m.buttons[7].value > 0.1);
+              const l2Pressed = (m.buttons[6] && m.buttons[6].pressed) || (m.buttons[6] && m.buttons[6].value > 0.1);
+
+              if (r2Pressed) { cambiarVolumen(0.03); }
+              if (l2Pressed) { cambiarVolumen(-0.03); }
             }
 
             // Triangle (△) - Índice 3 (Salir al menú)
