@@ -65,7 +65,7 @@
       pointer-events: none;
     }
 
-    /* Status Bar del Control (Fijo y Sólido) */
+    /* Status Bar del Control */
     .controller-status {
       position: absolute;
       top: 15px;
@@ -257,7 +257,7 @@
           <div class="cuadro" id="c2-izq"><span class="icon">🏰</span>3. Disney World</div>
           <div class="cuadro" id="c3-izq"><span class="icon">🎰</span>4. Las Vegas</div>
         </div>
-        <div class="instruccion-menu">D-Pad: Move | X: Select | △: Exit<br>O: Close Alert | SHARE: Refresh (F5)</div>
+        <div class="instruccion-menu">D-Pad: Move | X: Select | □: Pause/Play<br>△: Exit | O: Close Alert | SHARE: Refresh (F5)</div>
       </div>
 
       <div class="mensaje-error" id="alerta-error-izq">
@@ -286,7 +286,7 @@
           <div class="cuadro" id="c2-der"><span class="icon">🏰</span>3. Disney World</div>
           <div class="cuadro" id="c3-der"><span class="icon">🎰</span>4. Las Vegas</div>
         </div>
-        <div class="instruccion-menu">D-Pad: Move | X: Select | △: Exit<br>O: Close Alert | SHARE: Refresh (F5)</div>
+        <div class="instruccion-menu">D-Pad: Move | X: Select | □: Pause/Play<br>△: Exit | O: Close Alert | SHARE: Refresh (F5)</div>
       </div>
 
       <div class="mensaje-error" id="alerta-error-der">
@@ -297,7 +297,7 @@
     </div>
   </div>
 
-  <!-- STEREO VR VIEWPORT (Sin puntero molesto, vista limpia) -->
+  <!-- STEREO VR VIEWPORT -->
   <div class="escena-vr" id="contenedor-vr-global">
     <div style="display: flex; width: 100vw; height: 100vh;">
       <!-- Left Screen VR -->
@@ -414,6 +414,17 @@
       reproducirSonido(520, 'sine', 0.08);
     }
 
+    function alternarPausaVideo() {
+      const vid = document.getElementById('video-reproductor');
+      if (vid.paused) {
+        vid.play();
+        reproducirSonido(600, 'sine', 0.1);
+      } else {
+        vid.pause();
+        reproducirSonido(350, 'sine', 0.1);
+      }
+    }
+
     function seleccionarDestino(index) {
       const videoFile = videosDestinos[index];
       sonidoEntradaVR();
@@ -472,9 +483,9 @@
       }, 600);
     }
 
-    // PS4 Controller Gamepad API Loop con estado de conexión sólido
-    let controladorConectadoPrevio = false;
+    // PS4 Controller Gamepad API Loop
     let btnXPronto = false;
+    let btnSquarePronto = false;
     let btnCirclePronto = false;
     let btnTrianglePronto = false;
     let btnSharePronto = false;
@@ -510,7 +521,7 @@
             hayControl = true;
             const m = gamepads[i];
             
-            // OPTIONS / Start
+            // OPTIONS / Start (Índice 9 o 3)
             const btnOptions = m.buttons[9] || m.buttons[3];
             if (btnOptions && btnOptions.pressed && !btnOptionsPronto) {
               btnOptionsPronto = true;
@@ -519,7 +530,7 @@
               btnOptionsPronto = false;
             }
 
-            // Cross (X)
+            // Cross (X) - Índice 0
             const botonX = m.buttons[0];
             if (botonX && botonX.pressed && !btnXPronto) {
               btnXPronto = true;
@@ -528,7 +539,16 @@
               btnXPronto = false;
             }
 
-            // Triangle (△)
+            // Square (□) - Índice 2 (Pausa / Reanudar Video)
+            const botonSquare = m.buttons[2];
+            if (botonSquare && botonSquare.pressed && !btnSquarePronto) {
+              btnSquarePronto = true;
+              if (estadoActual === "VR") { alternarPausaVideo(); }
+            } else if (botonSquare && !botonSquare.pressed) {
+              btnSquarePronto = false;
+            }
+
+            // Triangle (△) - Índice 3 (Salir al menú)
             const botonTriangle = m.buttons[3];
             if (botonTriangle && botonTriangle.pressed && !btnTrianglePronto) {
               btnTrianglePronto = true;
@@ -537,7 +557,7 @@
               btnTrianglePronto = false;
             }
 
-            // Circle (O)
+            // Circle (O) - Índice 1 (Cerrar error)
             const botonCircle = m.buttons[1];
             if (botonCircle && botonCircle.pressed && !btnCirclePronto) {
               btnCirclePronto = true;
@@ -546,7 +566,7 @@
               btnCirclePronto = false;
             }
 
-            // SHARE (F5)
+            // SHARE (F5) - Índice 8 o 10
             const botonShare = m.buttons[8] || m.buttons[10];
             if (botonShare && botonShare.pressed && !btnSharePronto) {
               btnSharePronto = true;
@@ -593,7 +613,7 @@
                 dpadIzquierdaPronto = false;
               }
             }
-            break; // Tomar el primer mando activo
+            break;
           }
         }
       }
@@ -605,7 +625,6 @@
     window.addEventListener("gamepadconnected", (e) => { actualizarHUDControl(true); });
     window.addEventListener("gamepaddisconnected", (e) => { actualizarHUDControl(false); });
 
-    // Iniciar loop de lectura del mando
     requestAnimationFrame(bucleMandoPS4);
   </script>
 </body>
