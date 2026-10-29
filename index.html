@@ -201,11 +201,6 @@
       padding: 0 8px;
     }
 
-    /* Modals & Alerts (Oculto permanentemente para evitar falsos positivos) */
-    .mensaje-error {
-      display: none !important;
-    }
-
     /* Stereo VR Player */
     .escena-vr {
       position: absolute;
@@ -369,7 +364,7 @@
     function alternarPausaVideo() {
       const vid = document.getElementById('video-reproductor');
       if (vid.paused) {
-        vid.play().catch(e => console.log("Play error:", e));
+        vid.play().catch(() => {});
         reproducirSonido(600, 'sine', 0.1);
       } else {
         vid.pause();
@@ -400,9 +395,8 @@
             vrGlobal.style.display = 'block';
             setTimeout(() => { vrGlobal.style.opacity = '1'; }, 50);
             setTimeout(() => { window.dispatchEvent(new Event('resize')); }, 100);
-          }).catch(err => {
-            console.log("Reproduciendo en segundo plano / reintentando...", err);
-            // Si el navegador pone peros, forzamos la vista VR de todos modos para que el video arranque en cuanto cargue el búfer
+          }).catch(() => {
+            // Silencia cualquier bloqueo y asegura la transición visual sin errores
             document.querySelector('.app-dual').style.display = 'none';
             vrGlobal.style.display = 'block';
             vrGlobal.style.opacity = '1';
@@ -411,7 +405,7 @@
       }, 300);
 
       if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
-        DeviceOrientationEvent.requestPermission().catch(console.error);
+        DeviceOrientationEvent.requestPermission().catch(() => {});
       }
     }
 
