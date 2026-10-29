@@ -92,6 +92,11 @@
       justify-content: center;
       z-index: 99998;
       color: white;
+      transition: opacity 0.6s ease;
+    }
+
+    .menu-principal.ocultar {
+      opacity: 0;
     }
 
     .menu-principal h2 {
@@ -136,6 +141,27 @@
       padding: 0 10px;
     }
 
+    /* Capa de Mensaje de Error Estéreo Antierror */
+    .mensaje-error {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: rgba(20, 20, 20, 0.95);
+      border: 2px solid #ff3b30;
+      padding: 15px;
+      border-radius: 10px;
+      text-align: center;
+      z-index: 999999;
+      display: none;
+      width: 80%;
+      max-width: 300px;
+    }
+
+    .mensaje-error h3 { color: #ff3b30; margin: 0 0 8px 0; font-size: 14px; }
+    .mensaje-error p { color: #fff; margin: 0 0 10px 0; font-size: 10px; }
+    .mensaje-error span { color: #aaa; font-size: 9px; }
+
     /* Pantalla 3: Visor VR Estéreo Dual */
     .escena-vr {
       position: absolute;
@@ -145,6 +171,8 @@
       height: 100%;
       display: none;
       z-index: 99997;
+      opacity: 0;
+      transition: opacity 0.6s ease;
     }
   </style>
 </head>
@@ -164,11 +192,18 @@
         <h2>DESTINOS VR</h2>
         <div class="grid-cuadros">
           <div class="cuadro activo" id="c0-izq">1. Estatua de la Libertad</div>
-          <div class="cuadro" id="c1-izq">2. Washington</div>
-          <div class="cuadro" id="c2-izq">3. Próximamente</div>
-          <div class="cuadro" id="c3-izq">4. Próximamente</div>
+          <div class="cuadro" id="c1-izq">2. Mount Rushmore</div>
+          <div class="cuadro" id="c2-izq">3. Disney World</div>
+          <div class="cuadro" id="c3-izq">4. Las Vegas</div>
         </div>
-        <div class="instruccion-menu">Usa el joystick y presiona <b>X</b></div>
+        <div class="instruccion-menu">Joystick: Mover | X: Entrar | CIRCULO: Cerrar error | SHARE: F5</div>
+      </div>
+
+      <!-- Alerta de Error Duplicada en Lente Izquierdo -->
+      <div class="mensaje-error" id="alerta-error-izq">
+        <h3>ERROR DE VIDEO</h3>
+        <p id="texto-error-izq">No se encontró el archivo en GitHub.</p>
+        <span>Presiona <b>O (Círculo)</b> para cerrar</span>
       </div>
     </div>
 
@@ -184,11 +219,18 @@
         <h2>DESTINOS VR</h2>
         <div class="grid-cuadros">
           <div class="cuadro activo" id="c0-der">1. Estatua de la Libertad</div>
-          <div class="cuadro" id="c1-der">2. Washington</div>
-          <div class="cuadro" id="c2-der">3. Próximamente</div>
-          <div class="cuadro" id="c3-der">4. Próximamente</div>
+          <div class="cuadro" id="c1-der">2. Mount Rushmore</div>
+          <div class="cuadro" id="c2-der">3. Disney World</div>
+          <div class="cuadro" id="c3-der">4. Las Vegas</div>
         </div>
-        <div class="instruccion-menu">Usa el joystick y presiona <b>X</b></div>
+        <div class="instruccion-menu">Joystick: Mover | X: Entrar | CIRCULO: Cerrar error | SHARE: F5</div>
+      </div>
+
+      <!-- Alerta de Error Duplicada en Lente Derecho -->
+      <div class="mensaje-error" id="alerta-error-der">
+        <h3>ERROR DE VIDEO</h3>
+        <p id="texto-error-der">No se encontró el archivo en GitHub.</p>
+        <span>Presiona <b>O (Círculo)</b> para cerrar</span>
       </div>
     </div>
   </div>
@@ -199,26 +241,42 @@
       <div style="width: 50vw; height: 100vh; border-right: 2px solid #000;">
         <a-scene embedded vr-mode-ui="enabled: false" style="width: 100%; height: 100%;">
           <a-assets>
-            <video id="video-reproductor" src="video3.mp4" crossorigin="anonymous" playsinline webkit-playsinline></video>
+            <video id="video-reproductor" crossorigin="anonymous" playsinline webkit-playsinline></video>
           </a-assets>
           <a-videosphere src="#video-reproductor" rotation="0 -90 0"></a-videosphere>
-          <a-entity id="camara-izq" camera look-controls="magicWindowTrackingEnabled: true" position="0 1.6 0"></a-entity>
+          <a-entity camera look-controls="magicWindowTrackingEnabled: true" position="0 1.6 0"></a-entity>
         </a-scene>
       </div>
       <div style="width: 50vw; height: 100vh;">
         <a-scene embedded vr-mode-ui="enabled: false" style="width: 100%; height: 100%;">
           <a-videosphere src="#video-reproductor" rotation="0 -90 0"></a-videosphere>
-          <a-entity id="camara-der" camera look-controls="magicWindowTrackingEnabled: true" position="0 1.6 0"></a-entity>
+          <a-entity camera look-controls="magicWindowTrackingEnabled: true" position="0 1.6 0"></a-entity>
         </a-scene>
       </div>
     </div>
   </div>
 
   <script>
-    let estadoActual = "TITULO"; 
+    let estadoActual = "TITULO"; // "TITULO", "MENU", "VR", "ERROR"
     let seleccionActual = 0;
     const totalCuadros = 4;
     const videosDestinos = ["video3.mp4", "video4.mp4", "video5.mp4", "video6.mp4"];
+
+    // Sistema de Sonido Sintetizado
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    function reproducirSonido(frecuencia, tipo, duracion) {
+      if (audioCtx.state === 'suspended') { audioCtx.resume(); }
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.type = tipo;
+      osc.frequency.value = frecuencia;
+      gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.00001, audioCtx.currentTime + duracion);
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+      osc.start();
+      osc.stop(audioCtx.currentTime + duracion);
+    }
 
     function actualizarMenuVisual() {
       for (let i = 0; i < totalCuadros; i++) {
@@ -232,10 +290,12 @@
           elDer.classList.remove('activo');
         }
       }
+      reproducirSonido(440, 'sine', 0.08);
     }
 
     function irAlMenu() {
       if (estadoActual !== "TITULO") return;
+      reproducirSonido(587.33, 'triangle', 0.2);
       
       const tIzq = document.getElementById('titulo-izq');
       const tDer = document.getElementById('titulo-der');
@@ -245,67 +305,98 @@
       setTimeout(() => {
         tIzq.style.display = 'none';
         tDer.style.display = 'none';
-        document.getElementById('menu-izq').style.display = 'flex';
-        document.getElementById('menu-der').style.display = 'flex';
+        const mIzq = document.getElementById('menu-izq');
+        const mDer = document.getElementById('menu-der');
+        mIzq.style.display = 'flex';
+        mDer.style.display = 'flex';
+        mIzq.style.opacity = '1';
+        mDer.style.opacity = '1';
         estadoActual = "MENU";
       }, 600);
     }
 
+    function mostrarError(mensaje) {
+      estadoActual = "ERROR";
+      document.getElementById('texto-error-izq').textContent = mensaje;
+      document.getElementById('texto-error-der').textContent = mensaje;
+      document.getElementById('alerta-error-izq').style.display = 'block';
+      document.getElementById('alerta-error-der').style.display = 'block';
+      reproducirSonido(150, 'sawtooth', 0.3);
+    }
+
+    function cerrarError() {
+      document.getElementById('alerta-error-izq').style.display = 'none';
+      document.getElementById('alerta-error-der').style.display = 'none';
+      document.getElementById('contenedor-vr-global').style.display = 'none';
+      document.querySelector('.app-dual').style.display = 'flex';
+      document.getElementById('menu-izq').style.display = 'flex';
+      document.getElementById('menu-der').style.display = 'flex';
+      estadoActual = "MENU";
+      reproducirSonido(500, 'sine', 0.1);
+    }
+
     function seleccionarDestino(index) {
       const videoFile = videosDestinos[index];
-      
-      if (index > 0) {
-        alert("Este destino (" + videoFile + ") estará disponible próximamente.");
-        return;
-      }
+      reproducirSonido(880, 'sine', 0.15);
 
       estadoActual = "VR";
-      document.querySelector('.app-dual').style.display = 'none';
-      document.getElementById('contenedor-vr-global').style.display = 'block';
-
+      const vrGlobal = document.getElementById('contenedor-vr-global');
       const vid = document.getElementById('video-reproductor');
+      
+      vid.src = videoFile;
+      vid.load();
       vid.currentTime = 0;
       
-      // Forzar activación del giroscopio y reproducción simultánea en iOS
-      vid.play().then(() => {
-        // Truco para forzar el redibujado de la escena y evitar el bloqueo visual inicial
-        setTimeout(() => {
-          window.dispatchEvent(new Event('resize'));
-        }, 100);
-      }).catch(err => {
-        console.log("Error al reproducir el video:", err);
-        alert("No se pudo reproducir 'video3.mp4'. Verifica que esté subido en GitHub.");
-        regresarAlMenu();
-      });
+      const playPromise = vid.play();
+      if (playPromise !== undefined) {
+        playPromise.then(() => {
+          document.querySelector('.app-dual').style.display = 'none';
+          vrGlobal.style.display = 'block';
+          setTimeout(() => { vrGlobal.style.opacity = '1'; }, 50);
+          setTimeout(() => { window.dispatchEvent(new Event('resize')); }, 100);
+        }).catch(err => {
+          console.log("Error de reproducción:", err);
+          mostrarError("No se encontró '" + videoFile + "' en GitHub.");
+        });
+      }
 
-      // Solicitar permisos de giroscopio en iOS de forma forzada
       if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
-        DeviceOrientationEvent.requestPermission().then(response => {
-          if (response === 'granted') {
-            window.addEventListener('deviceorientation', (e) => {});
-          }
-        }).catch(console.error);
+        DeviceOrientationEvent.requestPermission().catch(console.error);
       }
     }
 
     const videoElement = document.getElementById('video-reproductor');
     videoElement.addEventListener('ended', () => {
-      regresarAlMenu();
+      regresarAlMenuConAnimacion();
     });
 
-    function regresarAlMenu() {
-      videoElement.pause();
-      
-      document.getElementById('contenedor-vr-global').style.display = 'none';
-      document.querySelector('.app-dual').style.display = 'flex';
-      
-      document.getElementById('menu-izq').style.display = 'flex';
-      document.getElementById('menu-der').style.display = 'flex';
-      estadoActual = "MENU";
+    function regresarAlMenuConAnimacion() {
+      reproducirSonido(300, 'sawtooth', 0.3);
+      const vrGlobal = document.getElementById('contenedor-vr-global');
+      vrGlobal.style.opacity = '0';
+
+      setTimeout(() => {
+        videoElement.pause();
+        videoElement.src = "";
+        vrGlobal.style.display = 'none';
+        
+        const appDual = document.querySelector('.app-dual');
+        const mIzq = document.getElementById('menu-izq');
+        const mDer = document.getElementById('menu-der');
+        
+        appDual.style.display = 'flex';
+        mIzq.style.display = 'flex';
+        mDer.style.display = 'flex';
+        mIzq.style.opacity = '1';
+        mDer.style.opacity = '1';
+        estadoActual = "MENU";
+      }, 600);
     }
 
     // Control por mando de PS4
     let btnXPronto = false;
+    let btnCirclePronto = false;
+    let btnSharePronto = false;
     let btnOptionsPronto = false;
     let dpadAbajoPronto = false;
     let dpadArribaPronto = false;
@@ -317,6 +408,7 @@
       if (gamepads && gamepads[0]) {
         const m = gamepads[0];
         
+        // Botón OPTIONS (Start) - Índice 9 o 3
         const btnOptions = m.buttons[9] || m.buttons[3];
         if (btnOptions && btnOptions.pressed && !btnOptionsPronto) {
           btnOptionsPronto = true;
@@ -327,6 +419,7 @@
           btnOptionsPronto = false;
         }
 
+        // Botón X (Cruz) - Índice 0
         const botonX = m.buttons[0];
         if (botonX && botonX.pressed && !btnXPronto) {
           btnXPronto = true;
@@ -337,6 +430,28 @@
           btnXPronto = false;
         }
 
+        // Botón CÍRCULO (B) - Índice 1 (Cierra mensajes de error)
+        const botonCircle = m.buttons[1];
+        if (botonCircle && botonCircle.pressed && !btnCirclePronto) {
+          btnCirclePronto = true;
+          if (estadoActual === "ERROR") {
+            cerrarError();
+          }
+        } else if (botonCircle && !botonCircle.pressed) {
+          btnCirclePronto = false;
+        }
+
+        // Botón SHARE (Select / Back) - Índice 8 o 10 (F5 / Recargar página)
+        const botonShare = m.buttons[8] || m.buttons[10];
+        if (botonShare && botonShare.pressed && !btnSharePronto) {
+          btnSharePronto = true;
+          reproducirSonido(600, 'sine', 0.1);
+          setTimeout(() => { location.reload(); }, 200); // Simula el F5
+        } else if (botonShare && !botonShare.pressed) {
+          btnSharePronto = false;
+        }
+
+        // Navegación en el menú con cruceta o joystick
         if (estadoActual === "MENU") {
           const axisY = m.axes[1];
           const axisX = m.axes[0];
